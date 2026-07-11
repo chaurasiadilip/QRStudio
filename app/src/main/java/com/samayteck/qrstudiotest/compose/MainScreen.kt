@@ -51,12 +51,15 @@ import com.samayteck.core.encoder.EncodingOptions
 import com.samayteck.core.encoder.ErrorCorrectionLevel
 import com.samayteck.core.model.*
 import com.samayteck.qrstudiotest.R
+import com.samayteck.qrstudiotest.util.QrExportUtils
+import com.samayteck.renderer.api.StyledQr
 import com.samayteck.svg.SvgLogoProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var currentScreen by remember { mutableStateOf("CONTENT") }
     var contentType by remember { mutableStateOf("URL") }
     var qrContent by remember { mutableStateOf("https://github.com") }
@@ -94,6 +97,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
     var cryptoAddress by remember { mutableStateOf("") }
     var cryptoAmount by remember { mutableStateOf("") }
 
+    var upiAddress by remember { mutableStateOf("") }
+    var upiName by remember { mutableStateOf("") }
+    var upiAmount by remember { mutableStateOf("") }
+    var upiNote by remember { mutableStateOf("") }
+
     var dotShape by remember { mutableStateOf(DotShape.ROUNDED) }
     var eyeFrameShape by remember { mutableStateOf(EyeShape.ROUNDED) }
     var eyeBallShape by remember { mutableStateOf(EyeBallShape.ROUNDED) }
@@ -108,6 +116,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
     var logoSize by remember { mutableStateOf(0.2f) }
     var logoDrawBackground by remember { mutableStateOf(true) }
     var selectedLogoName by remember { mutableStateOf("App Icon") }
+    var logoShape by remember { mutableStateOf(LogoShape.CIRCLE) }
     
     var colorScheme by remember { mutableStateOf("Black") }
     var bgColor by remember { mutableStateOf("White") }
@@ -130,7 +139,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
         firstName, lastName, organization, jobTitle, workPhone, mobilePhone, contactEmail,
         contactUrl, street, city, zip, state, country, contactNote,
         latitude, longitude, eventTitle, eventStart, eventEnd,
-        cryptoAddress, cryptoAmount
+        cryptoAddress, cryptoAmount,
+        upiAddress, upiName, upiAmount, upiNote
     ) {
         when (contentType) {
             "URL" -> UrlContent(qrContent)
@@ -145,6 +155,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
             "Map" -> LocationContent(latitude.toDoubleOrNull() ?: 0.0, longitude.toDoubleOrNull() ?: 0.0)
             "Event" -> CalendarContent(eventTitle, eventStart, eventEnd)
             "Bitcoin" -> BitcoinContent(cryptoAddress, cryptoAmount, socialMessage)
+            "Ethereum" -> EthereumContent(cryptoAddress, cryptoAmount)
+            "Solana" -> SolanaContent(cryptoAddress, cryptoAmount)
+            "UPI" -> UpiContent(upiAddress, upiName, upiAmount, upiNote)
             "WhatsApp" -> WhatsAppContent(phoneNumber, socialMessage)
             "Telegram" -> TelegramContent(socialUsername)
             "Instagram" -> InstagramContent(socialUsername)
@@ -152,6 +165,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
             "YouTube" -> YouTubeContent(qrContent)
             "X (Twitter)" -> XContent(socialUsername)
             "TikTok" -> TikTokContent(socialUsername)
+            "Discord" -> DiscordContent(socialUsername)
+            "Twitch" -> TwitchContent(socialUsername)
             "Email" -> EmailContent(emailAddress, emailSubject, emailBody)
             "Phone" -> PhoneContent(phoneNumber)
             "Play Store" -> PlayStoreContent(qrContent)
@@ -206,7 +221,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
         logoOptions = LogoOptions(
             bitmap = logoBitmap, 
             logoPercent = logoSize,
-            drawBackground = logoDrawBackground
+            drawBackground = logoDrawBackground,
+            logoShape = logoShape
         ),
         encodingOptions = EncodingOptions(errorCorrectionLevel = errorCorrectionLevel)
     )
@@ -262,7 +278,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Button(
-                            onClick = { /* Share */ },
+                            onClick = { 
+                                StyledQr.generate(options).onSuccess { bitmap ->
+                                    QrExportUtils.shareQrCode(context, bitmap, "qr_code")
+                                }
+                            },
                             modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -275,7 +295,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             Text("Share", fontWeight = FontWeight.Bold)
                         }
                         Button(
-                            onClick = { /* Download */ },
+                            onClick = { 
+                                StyledQr.generate(options).onSuccess { bitmap ->
+                                    QrExportUtils.saveToGallery(context, bitmap, "qr_code")
+                                }
+                            },
                             modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(16.dp)
                         ) {
@@ -306,7 +330,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         workPhone, { workPhone = it }, mobilePhone, { mobilePhone = it }, contactEmail, { contactEmail = it }, contactUrl, { contactUrl = it },
                         street, { street = it }, city, { city = it }, zip, { zip = it }, state, { state = it }, country, { country = it }, contactNote, { contactNote = it },
                         latitude, { latitude = it }, longitude, { longitude = it }, eventTitle, { eventTitle = it }, eventStart, { eventStart = it }, eventEnd, { eventEnd = it },
-                        cryptoAddress, { cryptoAddress = it }, cryptoAmount, { cryptoAmount = it }
+                        cryptoAddress, { cryptoAddress = it }, cryptoAmount, { cryptoAmount = it },
+                        upiAddress, { upiAddress = it }, upiName, { upiName = it }, upiAmount, { upiAmount = it }, upiNote, { upiNote = it }
                     )
                     Spacer(Modifier.height(80.dp))
                 }
@@ -403,7 +428,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                                         show = showLogo, onShow = { showLogo = it },
                                         logoName = selectedLogoName, onLogoNameChange = { selectedLogoName = it },
                                         size = logoSize, onSize = { logoSize = it },
-                                        drawBg = logoDrawBackground, onDrawBgChange = { logoDrawBackground = it }
+                                        drawBg = logoDrawBackground, onDrawBgChange = { logoDrawBackground = it },
+                                        shape = logoShape, onShapeChange = { logoShape = it }
                                     )
                                 }
                                 Spacer(Modifier.height(80.dp)) // Extra space for bottom bar
@@ -446,11 +472,12 @@ fun ContentTabRevamp(
     wPhone: String, onWPhoneChange: (String) -> Unit, mPhone: String, onMPhoneChange: (String) -> Unit, cEmail: String, onCEmailChange: (String) -> Unit, cUrl: String, onCUrlChange: (String) -> Unit,
     street: String, onStreetChange: (String) -> Unit, city: String, onCityChange: (String) -> Unit, zip: String, onZipChange: (String) -> Unit, state: String, onStateChange: (String) -> Unit, country: String, onCountryChange: (String) -> Unit, note: String, onNoteChange: (String) -> Unit,
     lat: String, onLatChange: (String) -> Unit, lon: String, onLonChange: (String) -> Unit, eTitle: String, onETitleChange: (String) -> Unit, eStart: String, onEStartChange: (String) -> Unit, eEnd: String, onEEndChange: (String) -> Unit,
-    cAddr: String, onCAddrChange: (String) -> Unit, cAmt: String, onCAmtChange: (String) -> Unit
+    cAddr: String, onCAddrChange: (String) -> Unit, cAmt: String, onCAmtChange: (String) -> Unit,
+    upiAddr: String, onUpiAddrChange: (String) -> Unit, upiName: String, onUpiNameChange: (String) -> Unit, upiAmt: String, onUpiAmtChange: (String) -> Unit, upiNote: String, onUpiNoteChange: (String) -> Unit
 ) {
     val categories = listOf(
-        "Standard" to listOf("URL", "Text", "Wi-Fi", "Email", "Phone", "SMS", "Map", "Event", "Bitcoin"),
-        "Social" to listOf("WhatsApp", "Telegram", "Instagram", "Facebook", "YouTube", "X (Twitter)", "TikTok", "LinkedIn"),
+        "Standard" to listOf("URL", "Text", "Wi-Fi", "Email", "Phone", "SMS", "Map", "Event", "Bitcoin", "Ethereum", "Solana", "UPI"),
+        "Social" to listOf("WhatsApp", "Telegram", "Instagram", "Facebook", "YouTube", "X (Twitter)", "TikTok", "LinkedIn", "Discord", "Twitch"),
         "Contacts" to listOf("vCard", "MeCard")
     )
 
@@ -520,9 +547,13 @@ fun ContentTabRevamp(
                     RevampTextField(phone, onPhoneChange, "Phone Number", Icons.Default.Phone)
                     if (type != "Phone") RevampTextField(socialMsg, onSocialMsgChange, "Initial Message", Icons.Default.Chat)
                 }
-                "Telegram", "Instagram", "Facebook", "X (Twitter)", "TikTok", "LinkedIn" -> {
+                "Telegram", "Instagram", "Facebook", "X (Twitter)", "TikTok", "LinkedIn", "Twitch" -> {
                     SectionHeader("Profile", Icons.Default.Person)
                     RevampTextField(socialUser, onSocialUserChange, "Username", Icons.Default.AlternateEmail)
+                }
+                "Discord" -> {
+                    SectionHeader("Server Invite", Icons.Default.Group)
+                    RevampTextField(socialUser, onSocialUserChange, "Invite Code", Icons.Default.Link)
                 }
                 "Email" -> {
                     SectionHeader("Email Message", Icons.Default.Email)
@@ -541,10 +572,17 @@ fun ContentTabRevamp(
                     RevampTextField(eStart, onEStartChange, "Start (YYYYMMDDTHHMMSSZ)")
                     RevampTextField(eEnd, onEEndChange, "End (YYYYMMDDTHHMMSSZ)")
                 }
-                "Bitcoin" -> {
+                "Bitcoin", "Ethereum", "Solana" -> {
                     SectionHeader("Wallet", Icons.Default.CurrencyBitcoin)
-                    RevampTextField(cAddr, onCAddrChange, "BTC Address")
+                    RevampTextField(cAddr, onCAddrChange, "$type Address")
                     RevampTextField(cAmt, onCAmtChange, "Amount")
+                }
+                "UPI" -> {
+                    SectionHeader("Payment Details", Icons.Default.Payments)
+                    RevampTextField(upiAddr, onUpiAddrChange, "UPI ID / VPA", Icons.Default.AccountBalanceWallet)
+                    RevampTextField(upiName, onUpiNameChange, "Payee Name", Icons.Default.Person)
+                    RevampTextField(upiAmt, onUpiAmtChange, "Amount (Optional)", Icons.Default.AttachMoney)
+                    RevampTextField(upiNote, onUpiNoteChange, "Note (Optional)", Icons.Default.Notes)
                 }
             }
         }
@@ -794,7 +832,8 @@ fun LogoTabRevamp(
     show: Boolean, onShow: (Boolean) -> Unit, 
     logoName: String, onLogoNameChange: (String) -> Unit,
     size: Float, onSize: (Float) -> Unit,
-    drawBg: Boolean, onDrawBgChange: (Boolean) -> Unit
+    drawBg: Boolean, onDrawBgChange: (Boolean) -> Unit,
+    shape: LogoShape, onShapeChange: (LogoShape) -> Unit
 ) {
     val logos = listOf(
         "App Icon" to Icons.Default.QrCode2,
@@ -810,7 +849,12 @@ fun LogoTabRevamp(
         "Call" to R.drawable.call,
         "Pinterest" to R.drawable.pinterest,
         "Calendar" to R.drawable.calendar,
-        "Bitcoin" to R.drawable.bitcoin
+        "Bitcoin" to R.drawable.bitcoin,
+        "Discord" to Icons.Default.Groups,
+        "Twitch" to Icons.Default.Videocam,
+        "Ethereum" to Icons.Default.CurrencyExchange,
+        "Solana" to Icons.Default.Wallet,
+        "UPI" to Icons.Default.Payments
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -883,6 +927,18 @@ fun LogoTabRevamp(
                         Text("Logo Background", fontWeight = FontWeight.Bold)
                         Spacer(Modifier.weight(1f))
                         Switch(drawBg, onDrawBgChange)
+                    }
+
+                    if (drawBg) {
+                        Text("Background Shape", style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            LogoShape.entries.forEach { s ->
+                                ShapeSelectionItem(s.name, shape == s) { onShapeChange(s) }
+                            }
+                        }
                     }
 
                     Column {

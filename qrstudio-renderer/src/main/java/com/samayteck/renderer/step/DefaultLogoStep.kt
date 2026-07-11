@@ -32,7 +32,10 @@ internal class DefaultLogoStep :
                 context.options.backgroundColor,
             
             backgroundPadding = 
-                logoOptions.backgroundPadding
+                logoOptions.backgroundPadding,
+                
+            logoShape = 
+                logoOptions.logoShape
         ).draw(
             context.canvas,
             context.qrAreaSize.toInt(),
