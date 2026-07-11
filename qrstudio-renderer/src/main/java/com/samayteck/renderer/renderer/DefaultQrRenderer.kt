@@ -51,15 +51,36 @@ internal class DefaultQrRenderer(
         val margin =
             options.encodingOptions.margin
 
+        var framePadding = 0f
+        var labelHeight = 0f
+
+        if (options.frameOptions.frameStyle != com.samayteck.core.model.FrameStyle.NONE) {
+            framePadding = options.frameOptions.padding
+            if (options.frameOptions.label != null) {
+                labelHeight = options.frameOptions.labelSize * 1.5f
+            }
+        }
+
+        // The QR code must fit within the frame, with some extra safety gap (5% of size)
+        val safetyGap = if (framePadding > 0) options.size * 0.05f else 0f
+        
+        val availableWidth = options.size - (framePadding * 2) - (safetyGap * 2)
+        val availableHeight = options.size - (framePadding * 2) - (safetyGap * 2) - labelHeight
+
+        val availableSize = minOf(availableWidth, availableHeight)
+
         val totalModules =
             matrix.width + (margin * 2)
 
         val moduleSize =
-            options.size.toFloat() /
+            availableSize /
                     totalModules
 
-        val offset =
-            margin * moduleSize
+        val qrAreaSize = totalModules * moduleSize
+        
+        val offsetX = (options.size - qrAreaSize) / 2f
+        // Vertical offset centers the QR between the top of the frame and the top of the label
+        val offsetY = (options.size - labelHeight - qrAreaSize) / 2f
 
         val context =
             RenderContext(
@@ -68,8 +89,11 @@ internal class DefaultQrRenderer(
                 bitmap = bitmap,
                 canvas = canvas,
                 moduleSize = moduleSize,
-                offsetX = offset,
-                offsetY = offset
+                offsetX = offsetX + (margin * moduleSize),
+                offsetY = offsetY + (margin * moduleSize),
+                centerX = options.size / 2f,
+                centerY = (options.size - labelHeight) / 2f,
+                qrAreaSize = availableSize
             )
 
         RendererPipeline(

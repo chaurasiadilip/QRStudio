@@ -21,19 +21,27 @@ internal object CircleFrameRenderer :
             color = options.frameColor
         }
 
+        val labelHeight = if (options.label != null) options.labelSize * 1.2f else 0f
+        val radius = size / 2f - options.padding - (labelHeight / 2f)
+        val cy = size / 2f - (labelHeight / 2f)
+
         canvas.drawCircle(
             size / 2f,
-            size / 2f,
-            size / 2f - options.padding,
+            cy,
+            radius,
             paint
         )
 
         options.label?.let { text ->
              val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = options.labelColor
-                textSize = size * 0.05f
+                textSize = options.labelSize
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = when(options.fontType) {
+                    "SERIF" -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
+                    "MONOSPACE" -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    else -> Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+                }
             }
             canvas.drawText(text, size / 2f, size - options.padding, textPaint)
         }

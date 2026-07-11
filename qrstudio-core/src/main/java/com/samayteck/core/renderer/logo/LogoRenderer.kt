@@ -5,6 +5,8 @@ import android.graphics.Canvas
 interface LogoRenderer {
     fun draw(
         canvas: Canvas,
-        qrSize: Int
+        qrSize: Int,
+        centerX: Float,
+        centerY: Float
     )
 }

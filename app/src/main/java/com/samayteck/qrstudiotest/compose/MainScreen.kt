@@ -1,5 +1,9 @@
 package com.samayteck.qrstudiotest.compose
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,24 +15,40 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import android.graphics.Bitmap
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.graphics.toArgb
+import java.util.Locale
+import androidx.compose.ui.res.painterResource
 import com.samayteck.compose.StyledQrCode
 import com.samayteck.core.content.basic.*
 import com.samayteck.core.content.social.*
 import com.samayteck.core.content.business.*
 import com.samayteck.core.content.location.LocationContent
 import com.samayteck.core.content.contact.VCardContent
+import com.samayteck.core.content.contact.MeCardContent
+import com.samayteck.core.content.event.CalendarContent
+import com.samayteck.core.encoder.EncodingOptions
+import com.samayteck.core.encoder.ErrorCorrectionLevel
 import com.samayteck.core.model.*
 import com.samayteck.qrstudiotest.R
 import com.samayteck.svg.SvgLogoProvider
@@ -36,34 +56,62 @@ import com.samayteck.svg.SvgLogoProvider
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
-
     val context = LocalContext.current
-
+    var currentScreen by remember { mutableStateOf("CONTENT") }
     var contentType by remember { mutableStateOf("URL") }
     var qrContent by remember { mutableStateOf("https://github.com") }
     
-    // Additional states for complex types
+    // States
     var wifiSsid by remember { mutableStateOf("") }
     var wifiPassword by remember { mutableStateOf("") }
     var wifiSecurity by remember { mutableStateOf("WPA") }
-    
+    var wifiHidden by remember { mutableStateOf(false) }
     var socialUsername by remember { mutableStateOf("") }
     var socialMessage by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var emailAddress by remember { mutableStateOf("") }
     var emailSubject by remember { mutableStateOf("") }
     var emailBody by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var organization by remember { mutableStateOf("") }
+    var jobTitle by remember { mutableStateOf("") }
+    var workPhone by remember { mutableStateOf("") }
+    var mobilePhone by remember { mutableStateOf("") }
+    var contactEmail by remember { mutableStateOf("") }
+    var contactUrl by remember { mutableStateOf("") }
+    var street by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
+    var zip by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf("") }
+    var contactNote by remember { mutableStateOf("") }
+    var latitude by remember { mutableStateOf("0.0") }
+    var longitude by remember { mutableStateOf("0.0") }
+    var eventTitle by remember { mutableStateOf("") }
+    var eventStart by remember { mutableStateOf("") }
+    var eventEnd by remember { mutableStateOf("") }
+    var cryptoAddress by remember { mutableStateOf("") }
+    var cryptoAmount by remember { mutableStateOf("") }
 
-    var dotShape by remember { mutableStateOf(DotShape.CIRCLE) }
-    var eyeShape by remember { mutableStateOf(EyeShape.CIRCLE) }
+    var dotShape by remember { mutableStateOf(DotShape.ROUNDED) }
+    var eyeFrameShape by remember { mutableStateOf(EyeShape.ROUNDED) }
+    var eyeBallShape by remember { mutableStateOf(EyeBallShape.ROUNDED) }
+    var eyeFrameColor by remember { mutableStateOf<Color?>(null) }
+    var eyeBallColor by remember { mutableStateOf<Color?>(null) }
     var frameStyle by remember { mutableStateOf(FrameStyle.NONE) }
     var frameLabel by remember { mutableStateOf("SCAN ME") }
-    
+    var frameColor by remember { mutableStateOf(Color.Black) }
+    var frameFont by remember { mutableStateOf("SANS_SERIF") }
     var showLogo by remember { mutableStateOf(false) }
     var useSvgLogo by remember { mutableStateOf(false) }
     var logoSize by remember { mutableStateOf(0.2f) }
+    var logoDrawBackground by remember { mutableStateOf(true) }
+    var selectedLogoName by remember { mutableStateOf("App Icon") }
+    
     var colorScheme by remember { mutableStateOf("Black") }
     var bgColor by remember { mutableStateOf("White") }
+    var errorCorrectionLevel by remember { mutableStateOf(ErrorCorrectionLevel.HIGH) }
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -77,21 +125,26 @@ fun MainScreen(modifier: Modifier = Modifier) {
     }
 
     val finalContent = remember(
-        contentType, qrContent, wifiSsid, wifiPassword, wifiSecurity,
-        socialUsername, socialMessage, phoneNumber, emailAddress, emailSubject, emailBody
+        contentType, qrContent, wifiSsid, wifiPassword, wifiSecurity, wifiHidden,
+        socialUsername, socialMessage, phoneNumber, emailAddress, emailSubject, emailBody,
+        firstName, lastName, organization, jobTitle, workPhone, mobilePhone, contactEmail,
+        contactUrl, street, city, zip, state, country, contactNote,
+        latitude, longitude, eventTitle, eventStart, eventEnd,
+        cryptoAddress, cryptoAmount
     ) {
         when (contentType) {
             "URL" -> UrlContent(qrContent)
             "Text" -> TextContent(qrContent)
-            "Wi-Fi" -> WifiContent(
-                ssid = wifiSsid,
-                password = wifiPassword,
-                security = when (wifiSecurity) {
-                    "WPA" -> WifiContent.Security.WPA
-                    "WEP" -> WifiContent.Security.WEP
-                    else -> WifiContent.Security.NONE
-                }
-            )
+            "Wi-Fi" -> WifiContent(wifiSsid, wifiPassword, when (wifiSecurity) {
+                "WPA" -> WifiContent.Security.WPA
+                "WEP" -> WifiContent.Security.WEP
+                else -> WifiContent.Security.NONE
+            }, wifiHidden)
+            "vCard" -> VCardContent(firstName, lastName, organization, jobTitle, workPhone, mobilePhone, contactEmail, contactUrl, street, city, zip, state, country)
+            "MeCard" -> MeCardContent("$firstName $lastName", mobilePhone.ifBlank { workPhone }, contactEmail, "$street, $city", contactUrl, contactNote)
+            "Map" -> LocationContent(latitude.toDoubleOrNull() ?: 0.0, longitude.toDoubleOrNull() ?: 0.0)
+            "Event" -> CalendarContent(eventTitle, eventStart, eventEnd)
+            "Bitcoin" -> BitcoinContent(cryptoAddress, cryptoAmount, socialMessage)
             "WhatsApp" -> WhatsAppContent(phoneNumber, socialMessage)
             "Telegram" -> TelegramContent(socialUsername)
             "Instagram" -> InstagramContent(socialUsername)
@@ -109,194 +162,253 @@ fun MainScreen(modifier: Modifier = Modifier) {
 
     val gradientStyle = remember(colorScheme) {
         when (colorScheme) {
-            "Blue Linear" -> GradientStyle.Linear(
-                startColor = android.graphics.Color.BLUE,
-                endColor = android.graphics.Color.CYAN
-            )
-            "Red Radial" -> GradientStyle.Radial(
-                centerColor = android.graphics.Color.RED,
-                edgeColor = android.graphics.Color.BLACK
-            )
-            "Rainbow Sweep" -> GradientStyle.Sweep(
-                colors = intArrayOf(
-                    android.graphics.Color.RED,
-                    android.graphics.Color.YELLOW,
-                    android.graphics.Color.GREEN,
-                    android.graphics.Color.BLUE,
-                    android.graphics.Color.MAGENTA,
-                    android.graphics.Color.RED
-                )
-            )
+            "Blue Linear" -> GradientStyle.Linear(android.graphics.Color.BLUE, android.graphics.Color.CYAN)
+            "Red Radial" -> GradientStyle.Radial(android.graphics.Color.RED, android.graphics.Color.BLACK)
+            "Rainbow Sweep" -> GradientStyle.Sweep(intArrayOf(android.graphics.Color.RED, android.graphics.Color.YELLOW, android.graphics.Color.GREEN, android.graphics.Color.BLUE, android.graphics.Color.MAGENTA, android.graphics.Color.RED))
             else -> GradientStyle.None
         }
     }
 
-    val logoBitmap = remember(showLogo, useSvgLogo) {
+    val logoBitmap = remember(showLogo, selectedLogoName) {
         if (!showLogo) return@remember null
-        if (useSvgLogo) {
-            SvgLogoProvider.fromAsset(context, "apple.svg", 512).getOrNull()
-        } else {
-            ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.toBitmap()
+       // ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.toBitmap()
+        when (selectedLogoName) {
+            "Apple" -> SvgLogoProvider.fromAsset(context, "apple.svg", 512).getOrNull()
+            "Facebook" -> SvgLogoProvider.fromAsset(context, "facebook.svg", 512).getOrNull()
+            "YouTube" -> SvgLogoProvider.fromAsset(context, "youtube.svg", 512).getOrNull()
+            "Instagram" -> SvgLogoProvider.fromAsset(context, "instagram.svg", 512).getOrNull()
+            "Reddit" -> SvgLogoProvider.fromAsset(context, "reddit.svg", 512).getOrNull()
+            "WhatsApp" -> SvgLogoProvider.fromAsset(context, "whatsapp.svg", 512).getOrNull()
+            "Wi-Fi" -> ContextCompat.getDrawable(context, R.drawable.wifi)?.toBitmap()
+            "Vimeo" -> ContextCompat.getDrawable(context, R.drawable.vimeo)?.toBitmap()
+            "Linkedin" -> ContextCompat.getDrawable(context, R.drawable.linkedin)?.toBitmap()
+            "Call" -> ContextCompat.getDrawable(context, R.drawable.call)?.toBitmap()
+            "Pinterest" -> ContextCompat.getDrawable(context, R.drawable.pinterest)?.toBitmap()
+            "Calendar" -> ContextCompat.getDrawable(context, R.drawable.calendar)?.toBitmap()
+            "Bitcoin" -> ContextCompat.getDrawable(context, R.drawable.bitcoin)?.toBitmap()
+            else -> ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.toBitmap()
         }
     }
 
     val options = StyledQrOptions(
-        content = finalContent,
-        size = 1000,
-        dotShape = dotShape,
-        eyeShape = eyeShape,
-        backgroundColor = backgroundColor,
-        gradientStyle = gradientStyle,
+        content = finalContent, size = 1000, dotShape = dotShape,
+        eyeFrameShape = eyeFrameShape, eyeBallShape = eyeBallShape,
+        eyeFrameColor = eyeFrameColor?.let { it.toArgb() },
+        eyeBallColor = eyeBallColor?.let { it.toArgb() },
+        backgroundColor = backgroundColor, gradientStyle = gradientStyle,
         frameOptions = FrameOptions(
-            frameStyle = frameStyle,
-            label = if (frameStyle != FrameStyle.NONE) frameLabel else null
+            frameStyle = frameStyle, 
+            label = if (frameStyle != FrameStyle.NONE) frameLabel else null,
+            frameColor = frameColor.toArgb(),
+            labelColor = frameColor.toArgb(),
+            fontType = frameFont
         ),
         logoOptions = LogoOptions(
-            bitmap = logoBitmap,
-            logoPercent = logoSize
-        )
+            bitmap = logoBitmap, 
+            logoPercent = logoSize,
+            drawBackground = logoDrawBackground
+        ),
+        encodingOptions = EncodingOptions(errorCorrectionLevel = errorCorrectionLevel)
     )
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("QR Studio Pro", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            TopAppBar(
+                title = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.QrCode2, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = if (currentScreen == "CONTENT") "Step 1: Content" else "Step 2: Design",
+                            fontWeight = FontWeight.ExtraBold, 
+                            fontSize = 20.sp
+                        )
+                    }
+                },
+                navigationIcon = {
+                    if (currentScreen == "DESIGN") {
+                        IconButton(onClick = { currentScreen = "CONTENT" }) {
+                            Icon(Icons.Default.ArrowBack, null)
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         bottomBar = {
             Surface(
-                tonalElevation = 8.dp,
-                shadowElevation = 8.dp
+                tonalElevation = 12.dp,
+                shadowElevation = 12.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { /* Share logic */ },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Share, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Share")
+                if (currentScreen == "CONTENT") {
+                    Box(modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding()) {
+                        Button(
+                            onClick = { currentScreen = "DESIGN" },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Design Your QR", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Icon(Icons.Default.ArrowForward, null)
+                        }
                     }
-                    Button(
-                        onClick = { /* Download logic */ },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(Icons.Default.Download, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Download")
+                        Button(
+                            onClick = { /* Share */ },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.Share, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Share", fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { /* Download */ },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(Icons.Default.FileDownload, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Save", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         }
     ) { padding ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // QR Preview Section
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ) {
+        Column(modifier = modifier.fillMaxSize().padding(padding)) {
+            if (currentScreen == "CONTENT") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    ContentTabRevamp(
+                        contentType, { contentType = it }, qrContent, { qrContent = it },
+                        wifiSsid, { wifiSsid = it }, wifiPassword, { wifiPassword = it }, wifiSecurity, { wifiSecurity = it }, wifiHidden, { wifiHidden = it },
+                        socialUsername, { socialUsername = it }, socialMessage, { socialMessage = it },
+                        phoneNumber, { phoneNumber = it }, emailAddress, { emailAddress = it }, emailSubject, { emailSubject = it }, emailBody, { emailBody = it },
+                        firstName, { firstName = it }, lastName, { lastName = it }, organization, { organization = it }, jobTitle, { jobTitle = it },
+                        workPhone, { workPhone = it }, mobilePhone, { mobilePhone = it }, contactEmail, { contactEmail = it }, contactUrl, { contactUrl = it },
+                        street, { street = it }, city, { city = it }, zip, { zip = it }, state, { state = it }, country, { country = it }, contactNote, { contactNote = it },
+                        latitude, { latitude = it }, longitude, { longitude = it }, eventTitle, { eventTitle = it }, eventStart, { eventStart = it }, eventEnd, { eventEnd = it },
+                        cryptoAddress, { cryptoAddress = it }, cryptoAmount, { cryptoAmount = it }
+                    )
+                    Spacer(Modifier.height(80.dp))
+                }
+            } else {
+                // High-end Preview Area
                 Box(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.85f)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surface,
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                )
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     ElevatedCard(
                         modifier = Modifier
                             .aspectRatio(1f)
-                            .fillMaxWidth(0.85f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
+                            .fillMaxWidth(0.75f)
+                            .shadow(
+                                elevation = 24.dp,
+                                shape = RoundedCornerShape(32.dp),
+                                ambientColor = MaterialTheme.colorScheme.primary,
+                                spotColor = MaterialTheme.colorScheme.primary
+                            ),
+                        shape = RoundedCornerShape(32.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
                     ) {
-                        StyledQrCode(
-                            options = options,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.White)
-                                .padding(16.dp)
-                        )
+                        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                            StyledQrCode(options = options, modifier = Modifier.fillMaxSize())
+                        }
                     }
                 }
-            }
 
-            // Tabs for customization
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.2f)
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                ScrollableTabRow(
-                    selectedTabIndex = selectedTab,
-                    edgePadding = 16.dp,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    divider = {}
+                // Customization Surface
+                Surface(
+                    modifier = Modifier.fillMaxWidth().weight(1.15f),
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                    tonalElevation = 3.dp,
+                    shadowElevation = 16.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                 ) {
-                    TabItem("Content", Icons.Default.Edit, selectedTab == 0) { selectedTab = 0 }
-                    TabItem("Shapes", Icons.Default.GridView, selectedTab == 1) { selectedTab = 1 }
-                    TabItem("Colors", Icons.Default.Palette, selectedTab == 2) { selectedTab = 2 }
-                    TabItem("Logo & Frame", Icons.Default.AutoAwesome, selectedTab == 3) { selectedTab = 3 }
-                }
+                    Column {
+                        ScrollableTabRow(
+                            selectedTabIndex = selectedTab,
+                            edgePadding = 24.dp,
+                            containerColor = Color.Transparent,
+                            divider = {},
+                            indicator = { tabPositions ->
+                                if (selectedTab < tabPositions.size) {
+                                    Box(
+                                        Modifier
+                                            .tabIndicatorOffset(tabPositions[selectedTab])
+                                            .height(4.dp)
+                                            .padding(horizontal = 24.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary)
+                                    )
+                                }
+                            }
+                        ) {
+                            TabItemRevamp("Style", Icons.Default.AutoAwesome, selectedTab == 0) { selectedTab = 0 }
+                            TabItemRevamp("Colors", Icons.Default.Palette, selectedTab == 1) { selectedTab = 1 }
+                            TabItemRevamp("Logo", Icons.Default.Image, selectedTab == 2) { selectedTab = 2 }
+                        }
 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    when (selectedTab) {
-                        0 -> ContentTab(
-                            contentType = contentType,
-                            onTypeChange = { contentType = it },
-                            content = qrContent,
-                            onContentChange = { qrContent = it },
-                            wifiSsid = wifiSsid,
-                            onSsidChange = { wifiSsid = it },
-                            wifiPass = wifiPassword,
-                            onPassChange = { wifiPassword = it },
-                            wifiSec = wifiSecurity,
-                            onSecChange = { wifiSecurity = it },
-                            socialUser = socialUsername,
-                            onSocialUserChange = { socialUsername = it },
-                            socialMsg = socialMessage,
-                            onSocialMsgChange = { socialMessage = it },
-                            phone = phoneNumber,
-                            onPhoneChange = { phoneNumber = it },
-                            email = emailAddress,
-                            onEmailChange = { emailAddress = it },
-                            subject = emailSubject,
-                            onSubjectChange = { emailSubject = it },
-                            body = emailBody,
-                            onBodyChange = { emailBody = it }
-                        )
-                        1 -> ShapesTab(dotShape, { dotShape = it }, eyeShape, { eyeShape = it })
-                        2 -> ColorsTab(colorScheme, { colorScheme = it }, bgColor, { bgColor = it })
-                        3 -> LogoFrameTab(
-                            showLogo, { showLogo = it },
-                            useSvgLogo, { useSvgLogo = it },
-                            logoSize, { logoSize = it },
-                            frameStyle, { frameStyle = it },
-                            frameLabel, { frameLabel = it }
-                        )
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(24.dp),
+                                verticalArrangement = Arrangement.spacedBy(24.dp)
+                            ) {
+                                when (selectedTab) {
+                                    0 -> StyleTabRevamp(
+                                    dotShape, { dotShape = it },
+                                    eyeFrameShape, { eyeFrameShape = it },
+                                    eyeBallShape, { eyeBallShape = it },
+                                    eyeFrameColor, { eyeFrameColor = it },
+                                    eyeBallColor, { eyeBallColor = it },
+                                    frameStyle, { frameStyle = it },
+                                    frameLabel, { frameLabel = it },
+                                    frameColor, { frameColor = it },
+                                    frameFont, { frameFont = it },
+                                    errorCorrectionLevel, { errorCorrectionLevel = it }
+                                )
+                                    1 -> ColorsTabRevamp(colorScheme, { colorScheme = it }, bgColor, { bgColor = it })
+                                    2 -> LogoTabRevamp(
+                                        show = showLogo, onShow = { showLogo = it },
+                                        logoName = selectedLogoName, onLogoNameChange = { selectedLogoName = it },
+                                        size = logoSize, onSize = { logoSize = it },
+                                        drawBg = logoDrawBackground, onDrawBgChange = { logoDrawBackground = it }
+                                    )
+                                }
+                                Spacer(Modifier.height(80.dp)) // Extra space for bottom bar
+                            }
+                        }
                     }
                 }
             }
@@ -305,327 +417,488 @@ fun MainScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TabItem(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
+fun TabItemRevamp(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
     Tab(
-        selected = selected,
-        onClick = onClick,
-        text = { Text(label, style = MaterialTheme.typography.labelLarge) },
-        icon = { Icon(icon, contentDescription = null) }
+        selected = selected, onClick = onClick,
+        text = { Text(label, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium) },
+        icon = { Icon(icon, null, modifier = Modifier.size(22.dp)) },
+        selectedContentColor = MaterialTheme.colorScheme.primary,
+        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
 @Composable
-fun ContentTab(
-    contentType: String, onTypeChange: (String) -> Unit,
-    content: String, onContentChange: (String) -> Unit,
-    wifiSsid: String, onSsidChange: (String) -> Unit,
-    wifiPass: String, onPassChange: (String) -> Unit,
-    wifiSec: String, onSecChange: (String) -> Unit,
-    socialUser: String, onSocialUserChange: (String) -> Unit,
-    socialMsg: String, onSocialMsgChange: (String) -> Unit,
-    phone: String, onPhoneChange: (String) -> Unit,
-    email: String, onEmailChange: (String) -> Unit,
-    subject: String, onSubjectChange: (String) -> Unit,
-    body: String, onBodyChange: (String) -> Unit
-) {
-    val categories = remember {
-        listOf(
-            "Basic" to listOf("URL", "Text", "Wi-Fi", "Email", "Phone", "SMS"),
-            "Social" to listOf("WhatsApp", "Telegram", "Instagram", "Facebook", "YouTube", "X (Twitter)", "TikTok", "LinkedIn", "Snapchat", "Spotify", "Reddit"),
-            "Business" to listOf("Play Store", "App Store", "Google Forms", "Google Doc", "Google Sheets", "Google Review", "Payment", "Paypal", "Etsy"),
-            "Files" to listOf("PDF", "Image", "Video", "Audio", "PPTX", "Excel")
-        )
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        categories.forEach { (category, types) ->
-            Text(category, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                types.forEach { type ->
-                    FilterChip(
-                        selected = contentType == type,
-                        onClick = { onTypeChange(type) },
-                        label = { Text(type) },
-                        leadingIcon = {
-                            Icon(
-                                when (type) {
-                                    "URL" -> Icons.Default.Link
-                                    "Text" -> Icons.Default.Notes
-                                    "Wi-Fi" -> Icons.Default.Wifi
-                                    "Email" -> Icons.Default.Email
-                                    "Phone" -> Icons.Default.Phone
-                                    "WhatsApp" -> Icons.Default.Chat
-                                    "Play Store" -> Icons.Default.Shop
-                                    "App Store" -> Icons.Default.Store
-                                    "YouTube" -> Icons.Default.PlayCircle
-                                    "Facebook" -> Icons.Default.Facebook
-                                    "Instagram" -> Icons.Default.PhotoCamera
-                                    "X (Twitter)" -> Icons.Default.Close
-                                    "TikTok" -> Icons.Default.MusicNote
-                                    "LinkedIn" -> Icons.Default.Work
-                                    "PDF" -> Icons.Default.PictureAsPdf
-                                    "Image" -> Icons.Default.Image
-                                    "Video" -> Icons.Default.VideoLibrary
-                                    else -> Icons.Default.Description
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    )
-                }
-            }
-        }
-
-        HorizontalDivider()
-
-        Text("Edit $contentType", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-
-        when (contentType) {
-            "URL", "YouTube", "Play Store", "App Store", "Google Forms", "Google Doc", "Google Sheets", "Google Review", "Payment", "Paypal", "Etsy" -> {
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = onContentChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("URL / Link") },
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Link, null) }
-                )
-            }
-            "Text" -> {
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = onContentChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Enter text here") },
-                    shape = RoundedCornerShape(12.dp),
-                    minLines = 3
-                )
-            }
-            "Wi-Fi" -> {
-                OutlinedTextField(
-                    value = wifiSsid,
-                    onValueChange = onSsidChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Network Name (SSID)") },
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Wifi, null) }
-                )
-                OutlinedTextField(
-                    value = wifiPass,
-                    onValueChange = onPassChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Password") },
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Lock, null) }
-                )
-                Text("Security Type", style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("WPA", "WEP", "None").forEach { sec ->
-                        ElevatedFilterChip(selected = wifiSec == sec, onClick = { onSecChange(sec) }, label = { Text(sec) })
-                    }
-                }
-            }
-            "WhatsApp", "Phone", "SMS" -> {
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = onPhoneChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Phone Number") },
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Phone, null) }
-                )
-                if (contentType == "WhatsApp" || contentType == "SMS") {
-                    OutlinedTextField(
-                        value = socialMsg,
-                        onValueChange = onSocialMsgChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Initial Message (Optional)") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            }
-            "Telegram", "Instagram", "Facebook", "X (Twitter)", "TikTok", "LinkedIn", "Snapchat", "Spotify", "Reddit" -> {
-                OutlinedTextField(
-                    value = socialUser,
-                    onValueChange = onSocialUserChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Username or Profile ID") },
-                    shape = RoundedCornerShape(12.dp),
-                    prefix = { Text("@") }
-                )
-            }
-            "Email" -> {
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = onEmailChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Email Address") },
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Email, null) }
-                )
-                OutlinedTextField(
-                    value = subject,
-                    onValueChange = onSubjectChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Subject") },
-                    shape = RoundedCornerShape(12.dp)
-                )
-                OutlinedTextField(
-                    value = body,
-                    onValueChange = onBodyChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Message Body") },
-                    shape = RoundedCornerShape(12.dp),
-                    minLines = 3
-                )
-            }
-            "PDF", "Image", "Video", "Audio", "PPTX", "Excel" -> {
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = onContentChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("File URL (or upload placeholder)") },
-                    shape = RoundedCornerShape(12.dp),
-                    supportingText = { Text("In a full app, this would be a file picker") },
-                    leadingIcon = { Icon(Icons.Default.AttachFile, null) }
-                )
-            }
-        }
+fun SectionHeader(title: String, icon: ImageVector) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
 @Composable
-fun ShapesTab(
-    dotShape: DotShape, onDotChange: (DotShape) -> Unit,
-    eyeShape: EyeShape, onEyeChange: (EyeShape) -> Unit
+fun ContentTabRevamp(
+    type: String, onTypeChange: (String) -> Unit, content: String, onContentChange: (String) -> Unit,
+    wifiSsid: String, onSsidChange: (String) -> Unit, wifiPass: String, onPassChange: (String) -> Unit, wifiSec: String, onSecChange: (String) -> Unit, wifiHidden: Boolean, onHiddenChange: (Boolean) -> Unit,
+    socialUser: String, onSocialUserChange: (String) -> Unit, socialMsg: String, onSocialMsgChange: (String) -> Unit,
+    phone: String, onPhoneChange: (String) -> Unit, email: String, onEmailChange: (String) -> Unit, subject: String, onSubjectChange: (String) -> Unit, body: String, onBodyChange: (String) -> Unit,
+    fName: String, onFNameChange: (String) -> Unit, lName: String, onLNameChange: (String) -> Unit, org: String, onOrgChange: (String) -> Unit, job: String, onJobChange: (String) -> Unit,
+    wPhone: String, onWPhoneChange: (String) -> Unit, mPhone: String, onMPhoneChange: (String) -> Unit, cEmail: String, onCEmailChange: (String) -> Unit, cUrl: String, onCUrlChange: (String) -> Unit,
+    street: String, onStreetChange: (String) -> Unit, city: String, onCityChange: (String) -> Unit, zip: String, onZipChange: (String) -> Unit, state: String, onStateChange: (String) -> Unit, country: String, onCountryChange: (String) -> Unit, note: String, onNoteChange: (String) -> Unit,
+    lat: String, onLatChange: (String) -> Unit, lon: String, onLonChange: (String) -> Unit, eTitle: String, onETitleChange: (String) -> Unit, eStart: String, onEStartChange: (String) -> Unit, eEnd: String, onEEndChange: (String) -> Unit,
+    cAddr: String, onCAddrChange: (String) -> Unit, cAmt: String, onCAmtChange: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Dot Style", style = MaterialTheme.typography.titleMedium)
-        DotSelector(selected = dotShape, onSelected = onDotChange)
+    val categories = listOf(
+        "Standard" to listOf("URL", "Text", "Wi-Fi", "Email", "Phone", "SMS", "Map", "Event", "Bitcoin"),
+        "Social" to listOf("WhatsApp", "Telegram", "Instagram", "Facebook", "YouTube", "X (Twitter)", "TikTok", "LinkedIn"),
+        "Contacts" to listOf("vCard", "MeCard")
+    )
 
-        Text("Eye Style", style = MaterialTheme.typography.titleMedium)
-        EyeSelector(selected = eyeShape, onSelected = onEyeChange)
-    }
-}
-
-@Composable
-fun ColorsTab(
-    colorScheme: String, onColorSchemeChange: (String) -> Unit,
-    bgColor: String, onBgColorChange: (String) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Foreground Style", style = MaterialTheme.typography.titleMedium)
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf(
-                "Black" to Color.Black,
-                "Blue Linear" to Color.Blue,
-                "Red Radial" to Color.Red,
-                "Rainbow Sweep" to Color.Magenta
-            ).forEach { (name, color) ->
-                InputChip(
-                    selected = colorScheme == name,
-                    onClick = { onColorSchemeChange(name) },
-                    label = { Text(name) },
-                    leadingIcon = {
-                        Box(
-                            Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
-                    }
-                )
-            }
-        }
-
-        Text("Background Color", style = MaterialTheme.typography.titleMedium)
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf(
-                "White" to Color.White,
-                "Light Gray" to Color.LightGray,
-                "Yellow" to Color.Yellow,
-                "Cyan" to Color.Cyan
-            ).forEach { (name, color) ->
-                InputChip(
-                    selected = bgColor == name,
-                    onClick = { onBgColorChange(name) },
-                    label = { Text(name) },
-                    leadingIcon = {
-                        Box(
-                            Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .border(1.dp, Color.Gray, CircleShape)
-                        )
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun LogoFrameTab(
-    showLogo: Boolean, onShowLogoChange: (Boolean) -> Unit,
-    useSvgLogo: Boolean, onUseSvgLogoChange: (Boolean) -> Unit,
-    logoSize: Float, onLogoSizeChange: (Float) -> Unit,
-    frameStyle: FrameStyle, onFrameStyleChange: (FrameStyle) -> Unit,
-    frameLabel: String, onFrameLabelChange: (String) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Frame Settings", style = MaterialTheme.typography.titleMedium)
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FrameStyle.entries.forEach { style ->
-                FilterChip(
-                    selected = frameStyle == style,
-                    onClick = { onFrameStyleChange(style) },
-                    label = { Text(style.name) }
-                )
-            }
-        }
-
-        if (frameStyle != FrameStyle.NONE) {
-            OutlinedTextField(
-                value = frameLabel,
-                onValueChange = onFrameLabelChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Frame Label") },
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-
-        HorizontalDivider()
-
-        Text("Logo Settings", style = MaterialTheme.typography.titleMedium)
-        ListItem(
-            headlineContent = { Text("Enable Logo") },
-            trailingContent = { Switch(checked = showLogo, onCheckedChange = onShowLogoChange) }
-        )
-
-        if (showLogo) {
-            ListItem(
-                headlineContent = { Text("Use Apple SVG Logo") },
-                supportingContent = { Text("apple.svg from assets") },
-                trailingContent = { Switch(checked = useSvgLogo, onCheckedChange = onUseSvgLogoChange) }
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        categories.forEach { (cat, types) ->
             Column {
-                Text("Logo Size: ${(logoSize * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
-                Slider(value = logoSize, onValueChange = onLogoSizeChange, valueRange = 0.1f..0.25f)
+                Text(cat, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    types.forEach { t ->
+                        FilterChip(
+                            selected = type == t, onClick = { onTypeChange(t) }, label = { Text(t) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer, selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                        )
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            when (type) {
+                "URL", "YouTube", "Play Store", "App Store" -> {
+                    SectionHeader("Link Details", Icons.Default.Link)
+                    RevampTextField(content, onContentChange, "URL / Link", Icons.Default.Link)
+                }
+                "Text" -> {
+                    SectionHeader("Message", Icons.Default.Notes)
+                    RevampTextField(content, onContentChange, "Your Message", Icons.Default.Notes, minLines = 4)
+                }
+                "Wi-Fi" -> {
+                    SectionHeader("Network Info", Icons.Default.Wifi)
+                    RevampTextField(wifiSsid, onSsidChange, "SSID (Name)", Icons.Default.Wifi)
+                    RevampTextField(wifiPass, onPassChange, "Password", Icons.Default.Lock)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        listOf("WPA", "WEP", "None").forEach { s ->
+                            InputChip(selected = wifiSec == s, onClick = { onSecChange(s) }, label = { Text(s) })
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Text("Hidden", fontSize = 12.sp)
+                        Switch(wifiHidden, onHiddenChange, modifier = Modifier.customScale(0.8f))
+                    }
+                }
+                "vCard", "MeCard" -> {
+                    SectionHeader("Contact Info", Icons.Default.AccountCircle)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.weight(1f)) { RevampTextField(fName, onFNameChange, "First Name") }
+                        Box(Modifier.weight(1f)) { RevampTextField(lName, onLNameChange, "Last Name") }
+                    }
+                    RevampTextField(mPhone, onMPhoneChange, "Mobile", Icons.Default.PhoneAndroid)
+                    RevampTextField(cEmail, onCEmailChange, "Email", Icons.Default.Email)
+                    RevampTextField(cUrl, onCUrlChange, "Website", Icons.Default.Language)
+                    if (type == "vCard") {
+                        RevampTextField(org, onOrgChange, "Company", Icons.Default.Business)
+                        RevampTextField(job, onJobChange, "Job Title", Icons.Default.Work)
+                    }
+                    SectionHeader("Address", Icons.Default.Map)
+                    RevampTextField(street, onStreetChange, "Street")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.weight(1f)) { RevampTextField(city, onCityChange, "City") }
+                        Box(Modifier.weight(1f)) { RevampTextField(zip, onZipChange, "Zip Code") }
+                    }
+                }
+                "WhatsApp", "SMS", "Phone" -> {
+                    SectionHeader("Phone Details", Icons.Default.Phone)
+                    RevampTextField(phone, onPhoneChange, "Phone Number", Icons.Default.Phone)
+                    if (type != "Phone") RevampTextField(socialMsg, onSocialMsgChange, "Initial Message", Icons.Default.Chat)
+                }
+                "Telegram", "Instagram", "Facebook", "X (Twitter)", "TikTok", "LinkedIn" -> {
+                    SectionHeader("Profile", Icons.Default.Person)
+                    RevampTextField(socialUser, onSocialUserChange, "Username", Icons.Default.AlternateEmail)
+                }
+                "Email" -> {
+                    SectionHeader("Email Message", Icons.Default.Email)
+                    RevampTextField(email, onEmailChange, "Recipient", Icons.Default.Email)
+                    RevampTextField(subject, onSubjectChange, "Subject")
+                    RevampTextField(body, onBodyChange, "Message Body", minLines = 3)
+                }
+                "Map" -> {
+                    SectionHeader("Coordinates", Icons.Default.LocationOn)
+                    RevampTextField(lat, onLatChange, "Latitude")
+                    RevampTextField(lon, onLonChange, "Longitude")
+                }
+                "Event" -> {
+                    SectionHeader("Event Details", Icons.Default.Event)
+                    RevampTextField(eTitle, onETitleChange, "Title")
+                    RevampTextField(eStart, onEStartChange, "Start (YYYYMMDDTHHMMSSZ)")
+                    RevampTextField(eEnd, onEEndChange, "End (YYYYMMDDTHHMMSSZ)")
+                }
+                "Bitcoin" -> {
+                    SectionHeader("Wallet", Icons.Default.CurrencyBitcoin)
+                    RevampTextField(cAddr, onCAddrChange, "BTC Address")
+                    RevampTextField(cAmt, onCAmtChange, "Amount")
+                }
             }
         }
     }
 }
+
+@Composable
+fun RevampTextField(value: String, onValueChange: (String) -> Unit, label: String, icon: ImageVector? = null, minLines: Int = 1) {
+    OutlinedTextField(
+        value = value, onValueChange = onValueChange, label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        leadingIcon = icon?.let { { Icon(it, null, tint = MaterialTheme.colorScheme.primary) } },
+        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant),
+        minLines = minLines
+    )
+}
+
+@Composable
+fun StyleTabRevamp(
+    dot: DotShape, onDot: (DotShape) -> Unit,
+    eFrame: EyeShape, onEFrame: (EyeShape) -> Unit,
+    eBall: EyeBallShape, onEBall: (EyeBallShape) -> Unit,
+    eFColor: Color?, onEFColor: (Color?) -> Unit,
+    eBColor: Color?, onEBColor: (Color?) -> Unit,
+    fStyle: FrameStyle, onFStyle: (FrameStyle) -> Unit,
+    fLabel: String, onFLabel: (String) -> Unit,
+    fColor: Color, onFColor: (Color) -> Unit,
+    fFont: String, onFFont: (String) -> Unit,
+    errorCorrection: ErrorCorrectionLevel, onErrorCorrection: (ErrorCorrectionLevel) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
+        Column {
+            SectionHeader("Error Correction", Icons.Default.Security)
+            Text("Higher levels allow the QR to be readable even if damaged or covered by a logo.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ErrorCorrectionLevel.entries.forEach { level ->
+                    val description = when(level) {
+                        ErrorCorrectionLevel.LOW -> "7%"
+                        ErrorCorrectionLevel.MEDIUM -> "15%"
+                        ErrorCorrectionLevel.QUARTILE -> "25%"
+                        ErrorCorrectionLevel.HIGH -> "30%"
+                    }
+                    ShapeSelectionItem("${level.name} ($description)", errorCorrection == level) { onErrorCorrection(level) }
+                }
+            }
+        }
+
+        Column {
+            SectionHeader("Frame Style", Icons.Default.CropFree)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                FrameStyle.entries.forEach { s ->
+                    ShapeSelectionItem(s.name, fStyle == s) { onFStyle(s) }
+                }
+            }
+            if (fStyle != FrameStyle.NONE) {
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Box(Modifier.weight(1f)) { RevampTextField(fLabel, onFLabel, "Frame Label", Icons.Default.Label) }
+                    // Simple color trigger
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(fColor)
+                            .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                            .clickable { 
+                                // In a full app, this would open a real color picker
+                                // For now, let's toggle a few professional colors
+                                val colors = listOf(Color.Black, Color(0xFF1976D2), Color(0xFFD32F2F), Color(0xFF388E3C))
+                                val nextIndex = (colors.indexOf(fColor) + 1) % colors.size
+                                onFColor(colors[nextIndex])
+                            }
+                    )
+                }
+                
+                Text("Label Font", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("SANS_SERIF", "SERIF", "MONOSPACE").forEach { font ->
+                        ElevatedFilterChip(
+                            selected = fFont == font,
+                            onClick = { onFFont(font) },
+                            label = { Text(font.lowercase().replaceFirstChar { it.uppercase() }) }
+                        )
+                    }
+                }
+            }
+        }
+
+        Column {
+            SectionHeader("Body Shape", Icons.Default.GridView)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                DotShape.entries.forEach { s ->
+                    ShapeSelectionItem(s.name, dot == s) { onDot(s) }
+                }
+            }
+        }
+
+        Column {
+            SectionHeader("Eye Frame", Icons.Default.CheckBoxOutlineBlank)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                EyeShape.entries.forEach { s ->
+                    ShapeSelectionItem(s.name, eFrame == s) { onEFrame(s) }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            EyeColorPicker(eFColor, onEFColor, "Frame Color")
+        }
+
+        Column {
+            SectionHeader("Eye Ball", Icons.Default.Lens)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                EyeBallShape.entries.forEach { s ->
+                    ShapeSelectionItem(s.name, eBall == s) { onEBall(s) }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            EyeColorPicker(eBColor, onEBColor, "Ball Color")
+        }
+    }
+}
+
+@Composable
+fun ShapeSelectionItem(label: String, selected: Boolean, onClick: () -> Unit) {
+    val name = if (label.contains("(")) label else label.lowercase().replaceFirstChar { it.uppercase() }.replace("_", " ")
+    Box(
+        modifier = Modifier
+            .widthIn(min = 100.dp)
+            .height(48.dp)
+            .padding(horizontal = 4.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary 
+                else MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = name, 
+            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, 
+            fontSize = 13.sp, 
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold, 
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun EyeColorPicker(selectedColor: Color?, onColorChange: (Color?) -> Unit, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically, 
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(label, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp))
+        
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Default/Null color option
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray.copy(alpha = 0.3f))
+                    .border(if (selectedColor == null) 3.dp else 1.dp, if (selectedColor == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, CircleShape)
+                    .clickable { onColorChange(null) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedColor == null) Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+
+            listOf(Color.Black, Color(0xFFD32F2F), Color(0xFF1976D2), Color(0xFF388E3C), Color(0xFFFBC02D), Color(0xFF7B1FA2)).forEach { color ->
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .border(if (selectedColor == color) 3.dp else 0.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        .shadow(if (selectedColor == color) 4.dp else 0.dp, CircleShape)
+                        .clickable { onColorChange(color) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedColor == color) Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ColorsTabRevamp(scheme: String, onScheme: (String) -> Unit, bg: String, onBg: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
+        Column {
+            SectionHeader("Body Color / Gradient", Icons.Default.Gradient)
+            val schemes = listOf("Black" to Color.Black, "Blue Linear" to Color.Blue, "Red Radial" to Color.Red, "Rainbow Sweep" to Color.Magenta)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                schemes.forEach { (name, color) ->
+                    ColorOptionItem(name, color, scheme == name) { onScheme(name) }
+                }
+            }
+        }
+        Column {
+            SectionHeader("Background Color", Icons.Default.FormatColorFill)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf("White" to Color.White, "Light Gray" to Color.LightGray, "Yellow" to Color.Yellow, "Cyan" to Color.Cyan).forEach { (name, color) ->
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(color)
+                            .border(if (bg == name) 3.dp else 1.dp, if (bg == name) MaterialTheme.colorScheme.primary else Color.LightGray, RoundedCornerShape(16.dp))
+                            .clickable { onBg(name) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (bg == name) Icon(Icons.Default.Check, null, tint = if (color == Color.White) Color.Black else Color.White)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ColorOptionItem(name: String, color: Color, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(color))
+            Spacer(Modifier.width(16.dp))
+            Text(name, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.weight(1f))
+            if (selected) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+fun LogoTabRevamp(
+    show: Boolean, onShow: (Boolean) -> Unit, 
+    logoName: String, onLogoNameChange: (String) -> Unit,
+    size: Float, onSize: (Float) -> Unit,
+    drawBg: Boolean, onDrawBgChange: (Boolean) -> Unit
+) {
+    val logos = listOf(
+        "App Icon" to Icons.Default.QrCode2,
+        "Apple" to Icons.Default.Smartphone,
+        "Facebook" to Icons.Default.Facebook,
+        "YouTube" to Icons.Default.PlayCircle,
+        "Instagram" to Icons.Default.CameraAlt,
+        "Reddit" to Icons.Default.Public,
+        "WhatsApp" to Icons.Default.Chat,
+        "Wi-Fi" to R.drawable.wifi,
+        "Vimeo" to R.drawable.vimeo,
+        "Linkedin" to R.drawable.linkedin,
+        "Call" to R.drawable.call,
+        "Pinterest" to R.drawable.pinterest,
+        "Calendar" to R.drawable.calendar,
+        "Bitcoin" to R.drawable.bitcoin
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        SectionHeader("Center Logo", Icons.Default.Face)
+        
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Enable Logo", fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    Switch(show, onShow)
+                }
+                
+                if (show) {
+                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                    
+                    Text("Select Logo", style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        logos.forEach { (name, source) ->
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 80.dp, height = 72.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (logoName == name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                                    .border(if (logoName == name) 0.dp else 1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                                    .clickable { onLogoNameChange(name) }
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                    when (source) {
+                                        is ImageVector -> {
+                                            Icon(
+                                                imageVector = source,
+                                                contentDescription = name,
+                                                tint = if (logoName == name) Color.White else MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                        is Int -> {
+                                            Image(
+                                                painter = painterResource(id = source),
+                                                contentDescription = name,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = name,
+                                        fontSize = 10.sp,
+                                        color = if (logoName == name) Color.White else MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Logo Background", fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.weight(1f))
+                        Switch(drawBg, onDrawBgChange)
+                    }
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Logo Size", fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.weight(1f))
+                            Text("${(size * 100).toInt()}%", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(value = size, onValueChange = onSize, valueRange = 0.1f..0.25f)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun Modifier.customScale(scale: Float) = this.then(
+    Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
+)

@@ -15,8 +15,11 @@ class StyledQrBuilder {
     private var dotShape: DotShape =
         DotShape.CIRCLE
 
-    private var eyeShape: EyeShape =
+    private var eyeFrameShape: EyeShape =
         EyeShape.ROUNDED
+
+    private var eyeBallShape: EyeBallShape =
+        EyeBallShape.ROUNDED
 
     private var backgroundPattern:
             BackgroundPattern =
@@ -59,10 +62,16 @@ class StyledQrBuilder {
         dotShape = value
     }
 
-    fun eyeShape(
+    fun eyeFrameShape(
         value: EyeShape
     ) = apply {
-        eyeShape = value
+        eyeFrameShape = value
+    }
+
+    fun eyeBallShape(
+        value: EyeBallShape
+    ) = apply {
+        eyeBallShape = value
     }
 
     fun backgroundPattern(
@@ -109,7 +118,8 @@ class StyledQrBuilder {
             content = TextContent(content),
             size = size,
             dotShape = dotShape,
-            eyeShape = eyeShape,
+            eyeFrameShape = eyeFrameShape,
+            eyeBallShape = eyeBallShape,
             backgroundPattern = backgroundPattern,
             backgroundStyle = backgroundStyle,
             backgroundColor = backgroundColor,

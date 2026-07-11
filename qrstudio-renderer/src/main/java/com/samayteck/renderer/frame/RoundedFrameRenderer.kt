@@ -22,14 +22,17 @@ internal object RoundedFrameRenderer :
         }
 
         val padding = options.padding
+        val labelHeight = if (options.label != null) options.labelSize * 1.5f else 0f
+        
+        val frameRect = RectF(
+            padding,
+            padding,
+            size - padding,
+            size - padding - labelHeight
+        )
 
         canvas.drawRoundRect(
-            RectF(
-                padding,
-                padding,
-                size - padding,
-                size - padding
-            ),
+            frameRect,
             48f,
             48f,
             paint
@@ -38,29 +41,18 @@ internal object RoundedFrameRenderer :
         options.label?.let { text ->
             val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = options.labelColor
-                textSize = size * 0.05f
+                textSize = options.labelSize
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            }
-            
-            val textBounds = Rect()
-            textPaint.getTextBounds(text, 0, text.length, textBounds)
-            
-            val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
+                typeface = when(options.fontType) {
+                    "SERIF" -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
+                    "MONOSPACE" -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    else -> Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+                }
             }
             
             val textX = size / 2f
-            val textY = size - padding
+            val textY = size - padding // Place at the very bottom padding area
             
-            canvas.drawRect(
-                textX - textBounds.width() / 2f - 20f,
-                textY - textBounds.height() - 10f,
-                textX + textBounds.width() / 2f + 20f,
-                textY + 10f,
-                bgPaint
-            )
-
             canvas.drawText(text, textX, textY, textPaint)
         }
     }

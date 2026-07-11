@@ -3,14 +3,10 @@ package com.samayteck.core.content.basic
 import com.samayteck.core.content.QrContent
 
 data class WifiContent(
-
     val ssid: String,
-
     val password: String,
-
-    val security: Security =
-        Security.WPA
-
+    val security: Security = Security.WPA,
+    val hidden: Boolean = false
 ) : QrContent {
 
     enum class Security {
@@ -20,7 +16,6 @@ data class WifiContent(
     }
 
     override fun encode(): String {
-
-        return "WIFI:T:${security.name};S:$ssid;P:$password;;"
+        return "WIFI:T:${security.name};S:$ssid;P:$password;H:$hidden;;"
     }
 }

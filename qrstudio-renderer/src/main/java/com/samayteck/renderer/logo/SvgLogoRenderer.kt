@@ -2,6 +2,7 @@ package com.samayteck.renderer.logo
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Matrix
 import com.samayteck.core.renderer.logo.LogoRenderer
 
 class SvgLogoRenderer(
@@ -11,31 +12,39 @@ class SvgLogoRenderer(
 
     override fun draw(
         canvas: Canvas,
-        qrSize: Int
+        qrSize: Int,
+        centerX: Float,
+        centerY: Float
     ) {
+        if (logoPercent <= 0f) return
 
-        val size =
-            (qrSize * logoPercent)
-                .toInt()
+        val maxLogoSize = (qrSize * logoPercent).toInt()
+        val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
 
-        val scaled =
-            Bitmap.createScaledBitmap(
-                bitmap,
-                size,
-                size,
-                true
-            )
+        val targetWidth: Int
+        val targetHeight: Int
 
-        val left =
-            (qrSize - size) / 2f
+        if (ratio > 1f) {
+            targetWidth = maxLogoSize
+            targetHeight = (maxLogoSize / ratio).toInt()
+        } else {
+            targetHeight = maxLogoSize
+            targetWidth = (maxLogoSize * ratio).toInt()
+        }
 
-        val top =
-            (qrSize - size) / 2f
+        val matrix = Matrix()
+        val scale = targetWidth.toFloat() / bitmap.width
+        
+        // Scale and center the bitmap using a Matrix
+        matrix.postScale(scale, scale)
+        matrix.postTranslate(
+            centerX - (targetWidth / 2f),
+            centerY - (targetHeight / 2f)
+        )
 
         canvas.drawBitmap(
-            scaled,
-            left,
-            top,
+            bitmap,
+            matrix,
             null
         )
     }

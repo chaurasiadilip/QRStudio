@@ -8,5 +8,7 @@ data class FrameOptions(
     val padding: Float = 24f,
     val label: String? = null,
     val labelColor: Int = Color.BLACK,
-    val frameColor: Int = Color.BLACK
+    val frameColor: Int = Color.BLACK,
+    val labelSize: Float = 40f,
+    val fontType: String = "SANS_SERIF"
 )

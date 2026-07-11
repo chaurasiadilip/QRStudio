@@ -22,11 +22,12 @@ internal object TicketFrameRenderer :
         }
 
         val padding = options.padding
+        val labelHeight = if (options.label != null) options.labelSize * 1.2f else 0f
         val radius = 40f
         val path = Path()
 
         path.addRoundRect(
-            RectF(padding, padding, size - padding, size - padding),
+            RectF(padding, padding, size - padding, size - padding - labelHeight),
             radius, radius, Path.Direction.CW
         )
 
@@ -37,17 +38,22 @@ internal object TicketFrameRenderer :
             color = Color.WHITE
         }
 
-        canvas.drawCircle(padding, size / 2f, cutoutRadius, clearPaint)
-        canvas.drawCircle(size - padding, size / 2f, cutoutRadius, clearPaint)
+        val centerY = (padding + (size - padding - labelHeight)) / 2f
+        canvas.drawCircle(padding, centerY, cutoutRadius, clearPaint)
+        canvas.drawCircle(size - padding, centerY, cutoutRadius, clearPaint)
 
         options.label?.let { text ->
              val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = options.labelColor
-                textSize = size * 0.05f
+                textSize = options.labelSize
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = when(options.fontType) {
+                    "SERIF" -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
+                    "MONOSPACE" -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    else -> Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+                }
             }
-            canvas.drawText(text, size / 2f, size - padding + 5f, textPaint)
+            canvas.drawText(text, size / 2f, size - padding, textPaint)
         }
     }
 }

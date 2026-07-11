@@ -7,5 +7,8 @@ enum class DotShape {
     DIAMOND,
     HEXAGON,
     HEART,
-    STAR
+    STAR,
+    CLASSY,
+    CLASSY_ROUNDED,
+    SLIM
 }

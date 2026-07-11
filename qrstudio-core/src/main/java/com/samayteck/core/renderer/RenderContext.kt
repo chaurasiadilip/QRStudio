@@ -18,5 +18,11 @@ data class RenderContext(
 
     val offsetX: Float,
 
-    val offsetY: Float
+    val offsetY: Float,
+    
+    val centerX: Float,
+    
+    val centerY: Float,
+    
+    val qrAreaSize: Float
 )

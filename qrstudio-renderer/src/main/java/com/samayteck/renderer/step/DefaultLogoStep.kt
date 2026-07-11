@@ -28,14 +28,16 @@ internal class DefaultLogoStep :
             drawBackground =
                 logoOptions.drawBackground,
 
-            backgroundPadding =
-                logoOptions.backgroundPadding,
-
             backgroundColor =
-                context.options.backgroundColor
+                context.options.backgroundColor,
+            
+            backgroundPadding = 
+                logoOptions.backgroundPadding
         ).draw(
             context.canvas,
-            context.options.size
+            context.qrAreaSize.toInt(),
+            context.centerX,
+            context.centerY
         )
     }
 }

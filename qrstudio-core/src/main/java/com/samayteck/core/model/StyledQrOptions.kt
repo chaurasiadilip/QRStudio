@@ -16,8 +16,15 @@ data class StyledQrOptions(
     val dotShape: DotShape =
         DotShape.ROUNDED,
 
-    val eyeShape: EyeShape =
+    val eyeFrameShape: EyeShape =
         EyeShape.ROUNDED,
+
+    val eyeBallShape: EyeBallShape =
+        EyeBallShape.ROUNDED,
+
+    val eyeFrameColor: Int? = null,
+
+    val eyeBallColor: Int? = null,
 
     val backgroundColor: Int =
         Color.WHITE,

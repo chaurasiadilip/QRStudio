@@ -13,7 +13,9 @@ class VectorLogoRenderer(
 
     override fun draw(
         canvas: Canvas,
-        qrSize: Int
+        qrSize: Int,
+        centerX: Float,
+        centerY: Float
     ) {
 
         if (
@@ -24,14 +26,28 @@ class VectorLogoRenderer(
             return
         }
 
-        val size =
-            (qrSize * logoPercent)
-                .toInt()
+        val maxLogoSize = (qrSize * logoPercent).toInt()
+
+        // Maintain aspect ratio for vectors
+        val intrinsicWidth = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 100
+        val intrinsicHeight = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 100
+        val ratio = intrinsicWidth.toFloat() / intrinsicHeight.toFloat()
+        
+        val targetWidth: Int
+        val targetHeight: Int
+        
+        if (ratio > 1f) {
+            targetWidth = maxLogoSize
+            targetHeight = (maxLogoSize / ratio).toInt()
+        } else {
+            targetHeight = maxLogoSize
+            targetWidth = (maxLogoSize * ratio).toInt()
+        }
 
         val bitmap =
             Bitmap.createBitmap(
-                size,
-                size,
+                targetWidth,
+                targetHeight,
                 Bitmap.Config.ARGB_8888
             )
 
@@ -41,19 +57,16 @@ class VectorLogoRenderer(
         drawable.setBounds(
             0,
             0,
-            size,
-            size
+            targetWidth,
+            targetHeight
         )
 
         drawable.draw(
             logoCanvas
         )
 
-        val left =
-            (qrSize - size) / 2f
-
-        val top =
-            (qrSize - size) / 2f
+        val left = centerX - (targetWidth / 2f)
+        val top = centerY - (targetHeight / 2f)
 
         canvas.drawBitmap(
             bitmap,

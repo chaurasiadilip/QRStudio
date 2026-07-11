@@ -4,5 +4,14 @@ enum class FrameStyle {
     NONE,
     ROUNDED,
     CIRCLE,
-    TICKET
+    TICKET,
+    BRACKET,
+    FOCUS,
+    SPEECH_BUBBLE,
+    MINIMAL,
+    TAB,
+    HEART,
+    HEXAGON,
+    BOX,
+    TEXT_ONLY
 }
