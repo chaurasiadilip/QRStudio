@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.samayteck.qrstudiotest"
+    namespace = "com.samayteck.qrstudio"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.samayteck.qrstudiotest"
+        applicationId = "com.samayteck.qrstudio"
         minSdk = 24
         targetSdk = 37
         versionCode = 1

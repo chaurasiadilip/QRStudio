@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Circular background -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,4
+            A50,50 0 1,1 54,104
+            A50,50 0 1,1 54,4Z"/>
+
+    <!-- QR + Heart cutout -->
+    <group
+        android:translateX="0"
+        android:translateY="0">
+
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="
+            M24,24h20v20h-20z
+            M28,28h12v12h-12z
+            M32,32h4v4h-4z
+
+            M24,64h20v20h-20z
+            M28,68h12v12h-12z
+            M32,72h4v4h-4z
+
+            M64,24h20v20h-20z
+            M68,28h12v12h-12z
+            M72,32h4v4h-4z
+
+            M50,24h6v6h-6z
+            M50,34h6v6h-6z
+            M60,34h4v6h-4z
+            M50,44h6v6h-6z
+
+            M24,50h6v6h-6z
+            M34,50h10v6h-10z
+            M50,54h14v6h-14z
+            M74,50h10v6h-10z
+
+            M24,60h6v4h-6z
+            M34,60h10v4h-10z
+            M50,64h6v6h-6z
+            M60,64h4v6h-4z
+            M70,60h14v4h-14z
+
+            M50,74h6v6h-6z
+            M60,74h14v6h-14z
+            M50,84h14v4h-14z
+
+            M64,66
+            C64,62.5 66.8,60 70,60
+            C72.3,60 74.3,61.2 75.5,63
+            C76.7,61.2 78.7,60 81,60
+            C84.2,60 87,62.5 87,66
+            C87,70.2 81.7,74.1 75.5,78
+            C69.3,74.1 64,70.2 64,66z"/>
+    </group>
+
+</vector>
