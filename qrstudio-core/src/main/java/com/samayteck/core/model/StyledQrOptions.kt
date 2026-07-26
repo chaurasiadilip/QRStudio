@@ -41,6 +41,8 @@ data class StyledQrOptions(
     GradientStyle =
         GradientStyle.None,
 
+    val backgroundImage: Bitmap? = null,
+
     val frameOptions:
     FrameOptions =
         FrameOptions(),

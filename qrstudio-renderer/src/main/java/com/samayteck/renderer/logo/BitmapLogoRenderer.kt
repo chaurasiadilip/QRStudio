@@ -8,12 +8,15 @@ import android.graphics.RectF
 import com.samayteck.core.constants.QrConstants
 import com.samayteck.core.renderer.logo.LogoRenderer
 
+import com.samayteck.core.model.LogoShape
+
 class BitmapLogoRenderer(
     private val logo: Bitmap,
     private val logoPercent: Float,
     private val drawBackground: Boolean = true,
     private val backgroundColor: Int = android.graphics.Color.WHITE,
-    private val backgroundPadding: Float = -1f // -1 means auto-calculate
+    private val backgroundPadding: Float = -1f, // -1 means auto-calculate
+    private val logoShape: LogoShape = LogoShape.CIRCLE
 ) : LogoRenderer {
 
     override fun draw(
@@ -51,22 +54,16 @@ class BitmapLogoRenderer(
         })
 
         if (drawBackground) {
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = backgroundColor
-            }
-
-            // Background should wrap the logo's actual dimensions
             val bgPadding = if (backgroundPadding >= 0) backgroundPadding else qrSize * 0.015f
-            
-            val bgRect = RectF(
-                centerX - (targetWidth / 2f) - bgPadding,
-                centerY - (targetHeight / 2f) - bgPadding,
-                centerX + (targetWidth / 2f) + bgPadding,
-                centerY + (targetHeight / 2f) + bgPadding
+            LogoBackgroundRenderer.draw(
+                canvas = canvas,
+                centerX = centerX,
+                centerY = centerY,
+                width = targetWidth + bgPadding * 2f,
+                height = targetHeight + bgPadding * 2f,
+                shape = logoShape,
+                backgroundColor = backgroundColor
             )
-
-            val radius = bgPadding * 2f
-            canvas.drawRoundRect(bgRect, radius, radius, paint)
         }
 
         val matrix = Matrix()

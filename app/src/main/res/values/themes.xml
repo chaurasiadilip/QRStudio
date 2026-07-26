@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.QRStudioTest" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.QRStudio" parent="Theme.Material3.DayNight.NoActionBar" />
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#6200EE</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="postSplashScreenTheme">@style/Theme.QRStudioTest</item>
+        <item name="postSplashScreenTheme">@style/Theme.QRStudio</item>
     </style>
 </resources>
