@@ -1,0 +1,5 @@
+- [/] Stage and commit untracked source files in `development/redesignUi`
+- [ ] Switch to `master` branch
+- [ ] Merge `development/redesignUi` into `master`
+- [ ] Push changes to `origin/master` and `origin/development/redesignUi`
+- [ ] Verify `java` folder presence on `master`
