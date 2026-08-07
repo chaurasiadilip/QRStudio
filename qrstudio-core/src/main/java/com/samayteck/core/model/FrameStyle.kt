@@ -10,8 +10,10 @@ enum class FrameStyle {
     SPEECH_BUBBLE,
     MINIMAL,
     TAB,
-    HEART,
     HEXAGON,
     BOX,
+    BADGE,
+    JEWEL,
+    POSTER,
     TEXT_ONLY
 }

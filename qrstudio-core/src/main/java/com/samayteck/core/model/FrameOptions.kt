@@ -9,6 +9,7 @@ data class FrameOptions(
     val label: String? = null,
     val labelColor: Int = Color.BLACK,
     val frameColor: Int = Color.BLACK,
+    val gradientStyle: GradientStyle = GradientStyle.None,
     val labelSize: Float = 40f,
     val fontType: String = "SANS_SERIF"
 )

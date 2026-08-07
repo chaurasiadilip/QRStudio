@@ -1,39 +1,70 @@
 package com.samayteck.qrstudio.compose
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Size
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.with
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import androidx.compose.ui.graphics.toArgb
-import java.util.Locale
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import com.samayteck.compose.StyledQrCode
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.ui.graphics.toArgb
+import com.samayteck.core.model.*
+import com.samayteck.qrstudio.R
+import com.samayteck.qrstudio.data.QrDatabase
+import com.samayteck.qrstudio.data.QrHistoryEntity
+import com.google.gson.Gson
+import kotlinx.coroutines.launch
+import com.samayteck.renderer.api.StyledQr
+import com.samayteck.svg.SvgLogoProvider
 import com.samayteck.core.content.basic.*
 import com.samayteck.core.content.social.*
 import com.samayteck.core.content.business.*
@@ -43,16 +74,84 @@ import com.samayteck.core.content.contact.MeCardContent
 import com.samayteck.core.content.event.CalendarContent
 import com.samayteck.core.encoder.EncodingOptions
 import com.samayteck.core.encoder.ErrorCorrectionLevel
-import com.samayteck.core.model.*
-import com.samayteck.qrstudio.R
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
+import com.samayteck.compose.StyledQrCode
 import com.samayteck.qrstudio.util.QrExportUtils
-import com.samayteck.renderer.api.StyledQr
-import com.samayteck.svg.SvgLogoProvider
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import android.graphics.Bitmap
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Tab
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.paddingFromBaseline
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.times
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.DefaultAlpha
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.zIndex
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val database = remember { QrDatabase.getDatabase(context) }
+    val historyDao = database.qrHistoryDao()
+    
+    val historyList by historyDao.getAllHistory().collectAsState(initial = emptyList())
+    
     var currentScreen by remember { mutableStateOf("CONTENT") }
     var contentType by remember { mutableStateOf("URL") }
     var qrContent by remember { mutableStateOf("https://github.com") }
@@ -103,6 +202,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
     var frameStyle by remember { mutableStateOf(FrameStyle.NONE) }
     var frameLabel by remember { mutableStateOf("SCAN ME") }
     var frameColor by remember { mutableStateOf(Color.Black) }
+    var frameGradientStyle by remember { mutableStateOf<GradientStyle>(GradientStyle.None) }
     var frameFont by remember { mutableStateOf("SANS_SERIF") }
     var showLogo by remember { mutableStateOf(false) }
     var useSvgLogo by remember { mutableStateOf(false) }
@@ -111,11 +211,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
     var selectedLogoName by remember { mutableStateOf("App Icon") }
     var logoShape by remember { mutableStateOf(LogoShape.CIRCLE) }
     
+    var selectedTemplate by remember { mutableStateOf<QrTemplate?>(null) }
+    
     var colorScheme by remember { mutableStateOf("Black") }
     var bgColor by remember { mutableStateOf("White") }
     var errorCorrectionLevel by remember { mutableStateOf(ErrorCorrectionLevel.HIGH) }
 
     var selectedTab by remember { mutableIntStateOf(0) }
+    var qrPremiumPosterBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     val backgroundColor = remember(bgColor) {
         when (bgColor) {
@@ -198,6 +301,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             "Solana" -> ContextCompat.getDrawable(context, R.drawable.solana)?.toBitmap()
             "UPI" -> ContextCompat.getDrawable(context, R.drawable.upi_icon)?.toBitmap()
             "Twitch" -> ContextCompat.getDrawable(context, R.drawable.twitch)?.toBitmap()
+            "Discord" -> ContextCompat.getDrawable(context, R.drawable.discord)?.toBitmap()
             else -> ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.toBitmap()
         }
     }
@@ -221,10 +325,22 @@ fun MainScreen(modifier: Modifier = Modifier) {
             drawBackground = logoDrawBackground,
             logoShape = logoShape
         ),
+        templateId = selectedTemplate?.id,
         encodingOptions = EncodingOptions(errorCorrectionLevel = errorCorrectionLevel)
     )
 
+    LaunchedEffect(selectedTemplate, options) {
+        qrPremiumPosterBitmap = if (selectedTemplate != null) {
+            com.samayteck.renderer.renderer.PosterRenderer(context)
+                .render(selectedTemplate!!, options, 1000)
+                .getOrNull()
+        } else {
+            null
+        }
+    }
+
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { 
@@ -238,8 +354,41 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         )*/
                     }
                 },
+                actions = {
+                    if (currentScreen != "SCAN" && currentScreen != "HISTORY") {
+                        val isFav = historyList.any { it.optionsJson == Gson().toJson(options) && it.isFavorite }
+                        IconButton(onClick = { 
+                            val existing = historyList.find { it.optionsJson == Gson().toJson(options) }
+                            if (existing != null) {
+                                scope.launch { historyDao.update(existing.copy(isFavorite = !existing.isFavorite)) }
+                            } else {
+                                scope.launch {
+                                    historyDao.insert(QrHistoryEntity(
+                                        content = finalContent.encode(),
+                                        type = contentType,
+                                        optionsJson = Gson().toJson(options),
+                                        templateId = selectedTemplate?.id,
+                                        isFavorite = true
+                                    ))
+                                }
+                            }
+                        }) {
+                            Icon(
+                                if (isFav) Icons.Default.Star else Icons.Default.StarOutline,
+                                null,
+                                tint = if (isFav) Color(0xFFFBC02D) else Color.Gray
+                            )
+                        }
+                        IconButton(onClick = { currentScreen = "SCAN" }) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan QR")
+                        }
+                        IconButton(onClick = { currentScreen = "HISTORY" }) {
+                            Icon(Icons.Default.History, contentDescription = "History")
+                        }
+                    }
+                },
                 navigationIcon = {
-                    if (currentScreen == "DESIGN") {
+                    if (currentScreen == "DESIGN" || currentScreen == "SCAN" || currentScreen == "HISTORY") {
                         IconButton(onClick = { currentScreen = "CONTENT" }) {
                             Icon(Icons.Default.ArrowBack, null)
                         }
@@ -252,66 +401,102 @@ fun MainScreen(modifier: Modifier = Modifier) {
             )
         },
         bottomBar = {
-            Surface(
-                tonalElevation = 12.dp,
-                shadowElevation = 12.dp,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-            ) {
-                if (currentScreen == "CONTENT") {
-                    Box(modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding()) {
-                        Button(
-                            onClick = { currentScreen = "DESIGN" },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF3B76F6),
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Text("Design Your QR", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Icon(Icons.Default.ArrowForward, null)
+            if (currentScreen != "SCAN") {
+                Surface(
+                    tonalElevation = 12.dp,
+                    shadowElevation = 12.dp,
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                ) {
+                    if (currentScreen == "CONTENT") {
+                        Box(modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding()) {
+                            Button(
+                                onClick = { currentScreen = "DESIGN" },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF3B76F6),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text("Design Your QR", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Icon(Icons.Default.ArrowForward, null)
+                            }
                         }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(
-                            onClick = { 
-                                StyledQr.generate(options).onSuccess { bitmap ->
-                                    QrExportUtils.shareQrCode(context, bitmap, "qr_code")
-                                }
-                            },
-                            modifier = Modifier.weight(1f).height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Icon(Icons.Default.Share, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Share", fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = { 
-                                StyledQr.generate(options).onSuccess { bitmap ->
-                                    QrExportUtils.saveToGallery(context, bitmap, "qr_code")
-                                }
-                            },
-                            modifier = Modifier.weight(1.5f).height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF3B76F6),
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Icon(Icons.Default.FileDownload, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Save", fontWeight = FontWeight.Bold)
+                            IconButton(
+                                onClick = {
+                                    StyledQr.generate(options).onSuccess { bitmap ->
+                                        QrExportUtils.saveAsPdf(context, bitmap, "qr_code")
+                                    }
+                                },
+                                modifier = Modifier.size(56.dp).background(Color.White, RoundedCornerShape(16.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                            Button(
+                                onClick = { 
+                                    if (selectedTemplate != null && qrPremiumPosterBitmap != null) {
+                                        QrExportUtils.shareQrCode(context, qrPremiumPosterBitmap!!, "poster")
+                                    } else {
+                                        StyledQr.generate(options).onSuccess { bitmap ->
+                                            QrExportUtils.shareQrCode(context, bitmap, "qr_code")
+                                        }
+                                    }
+                                    scope.launch {
+                                        historyDao.insert(QrHistoryEntity(
+                                            content = finalContent.encode(),
+                                            type = contentType,
+                                            optionsJson = Gson().toJson(options),
+                                            templateId = selectedTemplate?.id
+                                        ))
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White,
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                Icon(Icons.Default.Share, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Share", fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = { 
+                                    if (selectedTemplate != null && qrPremiumPosterBitmap != null) {
+                                        QrExportUtils.saveToGallery(context, qrPremiumPosterBitmap!!, "poster")
+                                    } else {
+                                        StyledQr.generate(options).onSuccess { bitmap ->
+                                            QrExportUtils.saveToGallery(context, bitmap, "qr_code")
+                                        }
+                                    }
+                                    scope.launch {
+                                        historyDao.insert(QrHistoryEntity(
+                                            content = finalContent.encode(),
+                                            type = contentType,
+                                            optionsJson = Gson().toJson(options),
+                                            templateId = selectedTemplate?.id
+                                        ))
+                                    }
+                                },
+                                modifier = Modifier.weight(1.5f).height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF3B76F6),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Icon(Icons.Default.FileDownload, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Save", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -319,7 +504,42 @@ fun MainScreen(modifier: Modifier = Modifier) {
         }
     ) { padding ->
         Column(modifier = modifier.fillMaxSize().padding(padding)) {
-            if (currentScreen == "CONTENT") {
+            if (currentScreen == "SCAN") {
+                ScannerScreen(
+                    onClose = { currentScreen = "CONTENT" },
+                    onResult = { result ->
+                        qrContent = result
+                        contentType = if (result.startsWith("http")) "URL" else "Text"
+                        currentScreen = "CONTENT"
+                        
+                        // Save to history as a scanned item
+                        scope.launch {
+                            historyDao.insert(QrHistoryEntity(
+                                content = result,
+                                type = if (result.startsWith("http")) "URL" else "Text",
+                                optionsJson = Gson().toJson(StyledQrOptions(
+                                    content = if (result.startsWith("http")) UrlContent(result) else TextContent(result)
+                                )),
+                                isScanned = true
+                            ))
+                        }
+                    }
+                )
+            } else if (currentScreen == "HISTORY") {
+                HistoryScreen(
+                    historyList = historyList,
+                    onItemClick = { entity ->
+                        val restoredOptions = Gson().fromJson(entity.optionsJson, StyledQrOptions::class.java)
+                        // This is a simplified restoration, in a real app we'd map all states
+                        qrContent = entity.content
+                        contentType = entity.type
+                        selectedTemplate = restoredOptions.templateId?.let { id -> QrTemplate.ALL_TEMPLATES.find { it.id == id } }
+                        currentScreen = "CONTENT"
+                    },
+                    onDelete = { entity -> scope.launch { historyDao.delete(entity) } },
+                    onToggleFavorite = { entity -> scope.launch { historyDao.update(entity.copy(isFavorite = !entity.isFavorite)) } }
+                )
+            } else if (currentScreen == "CONTENT") {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -342,96 +562,131 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     Spacer(Modifier.height(80.dp))
                 }
             } else {
-                // High-end Preview Area
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(0.9f)
-                        .background(Color(0xFFF8F9FF)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ElevatedCard(
-                        modifier = Modifier
-                            .aspectRatio(1f)
-                            .fillMaxWidth(0.85f)
-                            .shadow(
-                                elevation = 32.dp,
-                                shape = RoundedCornerShape(40.dp),
-                                ambientColor = Color.Black.copy(alpha = 0.1f),
-                                spotColor = Color.Black.copy(alpha = 0.1f)
-                            ),
-                        shape = RoundedCornerShape(40.dp),
-                        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                            StyledQrCode(options = options, modifier = Modifier.fillMaxSize())
-                        }
+                // Modern UI Refresh
+                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF0F4FF))) {
+                    // Subtle background decoration
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawCircle(
+                            color = Color(0xFFE0E7FF),
+                            radius = 400f,
+                            center = androidx.compose.ui.geometry.Offset(size.width, 0f)
+                        )
                     }
-                }
 
-                // Customization Surface
-                Surface(
-                    modifier = Modifier.fillMaxWidth().weight(1.15f),
-                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                    tonalElevation = 3.dp,
-                    shadowElevation = 16.dp,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                ) {
-                    Column {
-                        ScrollableTabRow(
-                            selectedTabIndex = selectedTab,
-                            edgePadding = 24.dp,
-                            containerColor = Color.Transparent,
-                            divider = {},
-                            indicator = { tabPositions ->
-                                if (selectedTab < tabPositions.size) {
-                                    Box(
-                                        Modifier
-                                            .tabIndicatorOffset(tabPositions[selectedTab])
-                                            .height(4.dp)
-                                            .padding(horizontal = 24.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primary)
-                                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // High-end Preview Area
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(0.85f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .aspectRatio(selectedTemplate?.aspectRatio ?: 1f)
+                                    .fillMaxWidth(if (selectedTemplate != null && selectedTemplate!!.aspectRatio > 1f) 0.92f else 0.82f)
+                                    .shadow(
+                                        elevation = 24.dp,
+                                        shape = RoundedCornerShape(if (selectedTemplate != null) 24.dp else 36.dp),
+                                        clip = false
+                                    ),
+                                shape = RoundedCornerShape(if (selectedTemplate != null) 24.dp else 36.dp),
+                                color = Color.White,
+                                border = BorderStroke(2.dp, Color.White)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(if (selectedTemplate != null) 0.dp else 24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (selectedTemplate != null && qrPremiumPosterBitmap != null) {
+                                        Image(
+                                            bitmap = qrPremiumPosterBitmap!!.asImageBitmap(),
+                                            contentDescription = "Poster Preview",
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        StyledQrCode(options = options, modifier = Modifier.fillMaxSize())
+                                    }
                                 }
                             }
-                        ) {
-                            TabItemRevamp("Style", Icons.Default.AutoAwesome, selectedTab == 0) { selectedTab = 0 }
-                            TabItemRevamp("Colors", Icons.Default.Palette, selectedTab == 1) { selectedTab = 1 }
-                            TabItemRevamp("Logo", Icons.Default.Image, selectedTab == 2) { selectedTab = 2 }
                         }
 
-                        Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(24.dp),
-                                verticalArrangement = Arrangement.spacedBy(24.dp)
-                            ) {
-                                when (selectedTab) {
-                                    0 -> StyleTabRevamp(
-                                    dotShape, { dotShape = it },
-                                    eyeFrameShape, { eyeFrameShape = it },
-                                    eyeBallShape, { eyeBallShape = it },
-                                    eyeFrameColor, { eyeFrameColor = it },
-                                    eyeBallColor, { eyeBallColor = it },
-                                    frameStyle, { frameStyle = it },
-                                    frameLabel, { frameLabel = it },
-                                    frameColor, { frameColor = it },
-                                    frameFont, { frameFont = it },
-                                    errorCorrectionLevel, { errorCorrectionLevel = it }
-                                )
-                                    1 -> ColorsTabRevamp(colorScheme, { colorScheme = it }, bgColor, { bgColor = it })
-                                    2 -> LogoTabRevamp(
-                                        show = showLogo, onShow = { showLogo = it },
-                                        logoName = selectedLogoName, onLogoNameChange = { selectedLogoName = it },
-                                        size = logoSize, onSize = { logoSize = it },
-                                        drawBg = logoDrawBackground, onDrawBgChange = { logoDrawBackground = it },
-                                        shape = logoShape, onShapeChange = { logoShape = it }
-                                    )
+                        // Customization Surface - Elevated and Modern
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1.15f),
+                            shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp),
+                            color = Color.White,
+                            shadowElevation = 20.dp
+                        ) {
+                            Column {
+                                // Modern Tab Bar
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 16.dp, start = 24.dp, end = 24.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFFF5F7FF)
+                                ) {
+                                    ScrollableTabRow(
+                                        selectedTabIndex = selectedTab,
+                                        edgePadding = 8.dp,
+                                        containerColor = Color.Transparent,
+                                        divider = {},
+                                        indicator = {} // We'll handle selection inside TabItemRevamp
+                                    ) {
+                                        listOf(
+                                            Triple("Style", Icons.Default.AutoAwesome, 0),
+                                            Triple("Colors", Icons.Default.Palette, 1),
+                                            Triple("Logo", Icons.Default.Image, 2),
+                                            Triple("Templates", Icons.Default.Dashboard, 3)
+                                        ).forEach { (label, icon, index) ->
+                                            TabItemRevamp(label, icon, selectedTab == index) { selectedTab = index }
+                                        }
+                                    }
                                 }
-                                Spacer(Modifier.height(80.dp)) // Extra space for bottom bar
+
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .verticalScroll(rememberScrollState())
+                                            .padding(horizontal = 24.dp, vertical = 24.dp),
+                                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                                    ) {
+                                        when (selectedTab) {
+                                            0 -> StyleTabRevamp(
+                                                dotShape, { dotShape = it },
+                                                eyeFrameShape, { eyeFrameShape = it },
+                                                eyeBallShape, { eyeBallShape = it },
+                                                eyeFrameColor, { eyeFrameColor = it },
+                                                eyeBallColor, { eyeBallColor = it },
+                                                frameStyle, { frameStyle = it },
+                                                frameLabel, { frameLabel = it },
+                                                frameColor, { frameColor = it },
+                                                frameGradientStyle, { frameGradientStyle = it },
+                                                frameFont, { frameFont = it },
+                                                errorCorrectionLevel, { errorCorrectionLevel = it }
+                                            )
+                                            1 -> ColorsTabRevamp(colorScheme, { colorScheme = it }, bgColor, { bgColor = it })
+                                            2 -> LogoTabRevamp(
+                                                show = showLogo, onShow = { showLogo = it },
+                                                logoName = selectedLogoName, onLogoNameChange = { selectedLogoName = it },
+                                                size = logoSize, onSize = { logoSize = it },
+                                                drawBg = logoDrawBackground, onDrawBgChange = { logoDrawBackground = it },
+                                                shape = logoShape, onShapeChange = { logoShape = it }
+                                            )
+                                            3 -> TemplateTabRevamp(
+                                                selectedTemplate = selectedTemplate,
+                                                onTemplateSelected = { selectedTemplate = it }
+                                            )
+                                        }
+                                        Spacer(Modifier.height(100.dp))
+                                    }
+                                }
                             }
                         }
                     }
@@ -443,21 +698,66 @@ fun MainScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun TabItemRevamp(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
-    Tab(
-        selected = selected, onClick = onClick,
-        text = { Text(label, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium) },
-        icon = { Icon(icon, null, modifier = Modifier.size(22.dp)) },
-        selectedContentColor = MaterialTheme.colorScheme.primary,
-        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    val bgColor by animateColorAsState(if (selected) Color.White else Color.Transparent)
+    val contentColor by animateColorAsState(if (selected) MaterialTheme.colorScheme.primary else Color.Gray)
+    val iconScale by animateFloatAsState(if (selected) 1.15f else 1.0f)
+    
+    Box(
+        modifier = Modifier
+            .padding(vertical = 4.dp, horizontal = 4.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                icon, 
+                null, 
+                modifier = Modifier.size(20.dp).graphicsLayer(scaleX = iconScale, scaleY = iconScale),
+                tint = contentColor
+            )
+            if (selected) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = label,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+            }
+        }
+    }
 }
 
 @Composable
 fun SectionHeader(title: String, icon: ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(36.dp),
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        ) {
+            Icon(
+                icon, null, 
+                modifier = Modifier.padding(8.dp).size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1A1C1E)
+        )
     }
 }
 
@@ -714,6 +1014,7 @@ fun StyleTabRevamp(
     fStyle: FrameStyle, onFStyle: (FrameStyle) -> Unit,
     fLabel: String, onFLabel: (String) -> Unit,
     fColor: Color, onFColor: (Color) -> Unit,
+    fGradient: GradientStyle, onFGradient: (GradientStyle) -> Unit,
     fFont: String, onFFont: (String) -> Unit,
     errorCorrection: ErrorCorrectionLevel, onErrorCorrection: (ErrorCorrectionLevel) -> Unit
 ) {
@@ -762,6 +1063,23 @@ fun StyleTabRevamp(
                     )
                 }
                 
+                Text("Frame Gradient", style = MaterialTheme.typography.labelLarge)
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val gradients = listOf(
+                        "None" to GradientStyle.None,
+                        "Blue" to GradientStyle.Linear(android.graphics.Color.BLUE, android.graphics.Color.CYAN),
+                        "Red" to GradientStyle.Radial(android.graphics.Color.RED, android.graphics.Color.BLACK),
+                        "Rainbow" to GradientStyle.Sweep(intArrayOf(android.graphics.Color.RED, android.graphics.Color.YELLOW, android.graphics.Color.GREEN, android.graphics.Color.BLUE, android.graphics.Color.MAGENTA, android.graphics.Color.RED))
+                    )
+                    gradients.forEach { (name, style) ->
+                        ElevatedFilterChip(
+                            selected = fGradient == style,
+                            onClick = { onFGradient(style) },
+                            label = { Text(name) }
+                        )
+                    }
+                }
+
                 Text("Label Font", style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("SANS_SERIF", "SERIF", "MONOSPACE").forEach { font ->
@@ -1076,6 +1394,178 @@ fun LogoTabRevamp(
                             Text("${(size * 100).toInt()}%", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                         Slider(value = size, onValueChange = onSize, valueRange = 0.1f..0.25f)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HistoryScreen(
+    historyList: List<QrHistoryEntity>,
+    onItemClick: (QrHistoryEntity) -> Unit,
+    onDelete: (QrHistoryEntity) -> Unit,
+    onToggleFavorite: (QrHistoryEntity) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredList = remember(historyList, searchQuery) {
+        if (searchQuery.isBlank()) historyList
+        else historyList.filter { it.content.contains(searchQuery, ignoreCase = true) || it.type.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Scan & Design History", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(16.dp))
+        
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Search history...") },
+            leadingIcon = { Icon(Icons.Default.Search, null) },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White
+            )
+        )
+        
+        Spacer(Modifier.height(16.dp))
+        
+        if (filteredList.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.History, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
+                    Text(if (searchQuery.isEmpty()) "No history yet" else "No results found", color = Color.Gray)
+                }
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(filteredList) { entity ->
+                    HistoryItem(entity, onItemClick, onDelete, onToggleFavorite)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HistoryItem(
+    entity: QrHistoryEntity,
+    onItemClick: (QrHistoryEntity) -> Unit,
+    onDelete: (QrHistoryEntity) -> Unit,
+    onToggleFavorite: (QrHistoryEntity) -> Unit
+) {
+    ElevatedCard(
+        onClick = { onItemClick(entity) },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(getContentIcon(entity.type) as ImageVector, null, tint = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(entity.content, maxLines = 1, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
+                    if (entity.isScanned) {
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            color = Color(0xFFE8F5E9),
+                            contentColor = Color(0xFF2E7D32),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                "SCANNED",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                Text(entity.type, style = MaterialTheme.typography.bodySmall)
+            }
+            IconButton(onClick = { onToggleFavorite(entity) }) {
+                Icon(
+                    if (entity.isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
+                    null,
+                    tint = if (entity.isFavorite) Color(0xFFFBC02D) else Color.Gray
+                )
+            }
+            IconButton(onClick = { onDelete(entity) }) {
+                Icon(Icons.Default.DeleteOutline, null, tint = Color.Gray)
+            }
+        }
+    }
+}
+
+@Composable
+fun TemplateTabRevamp(
+    selectedTemplate: QrTemplate?,
+    onTemplateSelected: (QrTemplate?) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        SectionHeader("Poster Templates", Icons.Default.Dashboard)
+        Text(
+            "Select a pre-designed layout for your QR code poster.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            // "None" option to go back to standard QR
+            Surface(
+                modifier = Modifier.fillMaxWidth().clickable { onTemplateSelected(null) },
+                shape = RoundedCornerShape(16.dp),
+                color = if (selectedTemplate == null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, if (selectedTemplate == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Clear, null, tint = if (selectedTemplate == null) MaterialTheme.colorScheme.primary else Color.Gray)
+                    Spacer(Modifier.width(16.dp))
+                    Text("Standard QR (No Template)", fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    if (selectedTemplate == null) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            QrTemplate.ALL_TEMPLATES.forEach { template ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clickable { onTemplateSelected(template) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (selectedTemplate?.id == template.id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (selectedTemplate?.id == template.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    when (val bg = template.background) {
+                                        is TemplateBackground.Solid -> Color(bg.color)
+                                        is TemplateBackground.Gradient -> Color(bg.colors.first())
+                                        else -> Color.LightGray
+                                    }
+                                )
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(template.name, fontWeight = FontWeight.Bold)
+                            Text(template.description, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                        }
+                        if (selectedTemplate?.id == template.id) {
+                            Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
             }

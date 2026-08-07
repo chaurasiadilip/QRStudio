@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -67,5 +68,43 @@ object QrExportUtils {
             }
             context.startActivity(Intent.createChooser(shareIntent, "Share QR Code"))
         }
+    }
+
+    fun saveAsPdf(context: Context, bitmap: Bitmap, name: String): Uri? {
+        val pdfDocument = PdfDocument()
+        val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, 1).create()
+        val page = pdfDocument.startPage(pageInfo)
+        
+        val canvas = page.canvas
+        canvas.drawBitmap(bitmap, 0f, 0f, null)
+        pdfDocument.finishPage(page)
+
+        val filename = "${name}_${System.currentTimeMillis()}.pdf"
+        var imageUri: Uri? = null
+        val contentResolver = context.contentResolver
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/QRStudio")
+            }
+            imageUri = contentResolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            imageUri?.let { uri ->
+                contentResolver.openOutputStream(uri)?.use { 
+                    pdfDocument.writeTo(it)
+                }
+            }
+        } else {
+            val docsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString() + "/QRStudio"
+            val file = File(docsDir)
+            if (!file.exists()) file.mkdir()
+            val pdfFile = File(docsDir, filename)
+            pdfDocument.writeTo(FileOutputStream(pdfFile))
+            imageUri = Uri.fromFile(pdfFile)
+        }
+        
+        pdfDocument.close()
+        return imageUri
     }
 }

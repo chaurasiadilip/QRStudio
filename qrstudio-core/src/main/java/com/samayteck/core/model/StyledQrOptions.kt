@@ -51,6 +51,8 @@ data class StyledQrOptions(
     LogoOptions =
         LogoOptions(),
 
+    val templateId: String? = null,
+
     val encodingOptions:
     EncodingOptions =
         EncodingOptions()

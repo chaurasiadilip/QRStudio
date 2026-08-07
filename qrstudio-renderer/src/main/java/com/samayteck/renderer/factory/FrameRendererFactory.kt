@@ -2,13 +2,15 @@ package com.samayteck.renderer.factory
 
 import com.samayteck.core.model.FrameStyle
 import com.samayteck.core.renderer.frame.FrameRenderer
+import com.samayteck.renderer.frame.BadgeFrameRenderer
 import com.samayteck.renderer.frame.BoxFrameRenderer
 import com.samayteck.renderer.frame.BracketFrameRenderer
 import com.samayteck.renderer.frame.CircleFrameRenderer
 import com.samayteck.renderer.frame.FocusFrameRenderer
-import com.samayteck.renderer.frame.HeartFrameRenderer
 import com.samayteck.renderer.frame.HexagonFrameRenderer
+import com.samayteck.renderer.frame.JewelFrameRenderer
 import com.samayteck.renderer.frame.MinimalFrameRenderer
+import com.samayteck.renderer.frame.PosterFrameRenderer
 import com.samayteck.renderer.frame.RoundedFrameRenderer
 import com.samayteck.renderer.frame.SpeechBubbleFrameRenderer
 import com.samayteck.renderer.frame.TabFrameRenderer
@@ -50,14 +52,20 @@ internal object FrameRendererFactory {
             FrameStyle.TAB ->
                 TabFrameRenderer
                 
-            FrameStyle.HEART ->
-                HeartFrameRenderer
-                
             FrameStyle.HEXAGON ->
                 HexagonFrameRenderer
 
             FrameStyle.BOX ->
                 BoxFrameRenderer
+
+            FrameStyle.BADGE ->
+                BadgeFrameRenderer
+
+            FrameStyle.JEWEL ->
+                JewelFrameRenderer
+
+            FrameStyle.POSTER ->
+                PosterFrameRenderer
 
             FrameStyle.TEXT_ONLY ->
                 TextOnlyFrameRenderer

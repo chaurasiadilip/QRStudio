@@ -61,8 +61,8 @@ internal class DefaultQrRenderer(
             }
         }
 
-        // The QR code must fit within the frame, with some extra safety gap (5% of size)
-        val safetyGap = if (framePadding > 0) options.size * 0.05f else 0f
+        // The QR code must fit within the frame, with more generous safety gap (15% of size)
+        val safetyGap = if (framePadding > 0) options.size * 0.15f else 0f
         
         val availableWidth = options.size - (framePadding * 2) - (safetyGap * 2)
         val availableHeight = options.size - (framePadding * 2) - (safetyGap * 2) - labelHeight
@@ -101,11 +101,11 @@ internal class DefaultQrRenderer(
 
                 backgroundStep,
 
-                frameStep,
-
                 dotStep,
 
                 eyeStep,
+
+                frameStep,
 
                 logoStep
             )
